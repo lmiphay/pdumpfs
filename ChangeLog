@@ -1,3 +1,9 @@
+2004-08-15  Satoru Takabayashi  <satoru@namazu.org>
+
+	* pdumpfs.in (parse_options): Don't strip the trailing '/' in the
+	method. 
+	(Pdumpfs::Pdumpfs::start): Do it in the method instead.
+
 2004-08-11  Satoru Takabayashi  <satoru@namazu.org>
 
  	* pdumpfs: Version 1.2 released.

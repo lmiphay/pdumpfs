@@ -853,7 +853,6 @@ module Pdumpfs
     def start (src, dest, base = nil)
       start_time = Time.now
 
-      base = File.basename(src) unless base
       if windows?
         src  = expand_special_folders(src)
         dest = expand_special_folders(dest)
@@ -861,6 +860,9 @@ module Pdumpfs
       if same_directory?(src, dest) or sub_directory?(src, dest)
         raise "cannot copy a directory, `#{src}', into itself, `#{dest}'"
       end
+      # strip the trailing / to avoid basename(src) == '' for Ruby 1.6.x.
+      src  = src.sub(%r!/+$!, "") unless src == '/' #'
+      base = File.basename(src) unless base
 
       latest = latest_snapshot(start_time, src, dest, base)
       today  = File.join(dest, datedir(start_time), base)
@@ -1199,8 +1201,6 @@ def parse_options
   src  = ARGV[0]
   dest = ARGV[1]
   base = ARGV[2]
-  # strip the trailing / to avoid basename(src) == ''.
-  src  = src.sub(%r!/+$!, "") unless src == '/' #'
   return src, dest, base, config
 end
 
