@@ -93,7 +93,15 @@ class File
   end
 
   def self.split_all (path)
-    path.split(File::SEPARATOR)
+    parts = []
+    while true
+      dirname, basename = File.split(path)
+      break if path == dirname
+      parts.unshift(basename)
+      path = dirname
+    end
+    parts.shift if parts.first == "."
+    return parts
   end
 end
 
@@ -164,24 +172,6 @@ if windows?
     pFILETIME
   end
 
-  LOCALE_USER_DEFAULT    = 0x400
-  LOCALE_SABBREVLANGNAME = 3
-  LOCALE_USE_CP_ACP      = 0x40000000
-
-  def get_locale_name
-    get_locale_info = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
-    locale_name = " " * 32
-    status = get_locale_info.call(LOCALE_USER_DEFAULT, 
-                                  LOCALE_SABBREVLANGNAME | LOCALE_USE_CP_ACP,
-                                  locale_name, 32)
-    if status == 0
-      return nil
-    else
-      return locale_name.split("\x00").first
-    end
-  end
-
-
   GENERIC_WRITE   = 0x40000000
   OPEN_EXISTING = 3
   FILE_FLAG_BACKUP_SEMANTICS =  0x02000000
@@ -208,12 +198,6 @@ if windows?
 
     return 0
   end
-
-  def init
-    $KCODE = "SJIS" if get_locale_name == "JPN"
-  end
-
-  init
 end
 
 $vruby_libraries_loaded = false
@@ -364,8 +348,26 @@ if has_vruby?
       return File.dirname(program_file_name)
     end
 
+    LOCALE_USER_DEFAULT    = 0x400
+    LOCALE_SABBREVLANGNAME = 3
+    LOCALE_USE_CP_ACP      = 0x40000000
+    GetLocaleInfo = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
+
+    def get_locale_name
+      locale_name = " " * 32
+      status = GetLocaleInfo.call(LOCALE_USER_DEFAULT, 
+                                  LOCALE_SABBREVLANGNAME | LOCALE_USE_CP_ACP,
+                                  locale_name, 32)
+      if status == 0
+        return nil
+      else
+        return locale_name.split("\x00").first
+      end
+    end
+
     def init_catalog (program_directory)
       locale_name  = get_locale_name
+      $KCODE = "SJIS" if locale_name == "JPN"
       if locale_name
         filename = File.join(program_directory,
                              sprintf("catalog.%s.txt", locale_name))
