@@ -52,9 +52,24 @@ require 'date'
 require 'ftools'
 require 'getoptlong'
 
+class InvalidSymbolicLink < Exception; end
 class File
+  def self.safe_readlink (path)
+    dest = File.readlink(path)
+    # On Linux, File.readlink("/proc/*/exe") may return a
+    # string containing a NUL character.
+    if dest.include?("\0")
+      raise InvalidSymbolicLink.new("invalid symbolic link: #{dest}") 
+    end
+    return dest
+  end
+
   def self.real_file? (path)
     File.file?(path) and not File.symlink?(path)
+  end
+
+  def self.anything_exist? (path)
+    File.exist?(path) or File.symlink?(path)
   end
 
   def self.real_directory? (path)
@@ -62,12 +77,12 @@ class File
   end
 
   def self.force_symlink (src, dest)
-    File.unlink(dest) if File.exist?(dest)
+    File.unlink(dest) if File.anything_exist?(dest)
     File.symlink(src, dest)
   end
 
   def self.force_link (src, dest)
-    File.unlink(dest) if File.exist?(dest)
+    File.unlink(dest) if File.anything_exist?(dest)
     File.link(src, dest)
   end
 
@@ -109,7 +124,7 @@ if windows?
   end
 
   def get_filesystem_type (path)
-    return nil  unless(FileTest.exist?(path))
+    return nil unless(File.exist?(path))
 
     get_volume_information = Win32API.new("kernel32", "GetVolumeInformation",
                                           %w(P P L P P P P L), "I")
@@ -926,7 +941,7 @@ module Pdumpfs
         else
           case File.ftype(src)
           when "file"
-            type = "new file"
+            type = "new_file"
           when "link"
             type = "symlink"
           end
@@ -949,7 +964,7 @@ module Pdumpfs
     end
 
     def report (type, file_name)
-      message = sprintf("%-10s %s\n", type, file_name)
+      message = sprintf("%-12s %s\n", type, file_name)
       @reporter.call(message)
       @interval_proc.call
     end
@@ -966,10 +981,10 @@ module Pdumpfs
         File.force_link(latest, today)
       when "updated"
         copy(src, today)
-      when "new file"
+      when "new_file"
         copy(src, today)
       when "symlink"
-        File.force_symlink(File.readlink(src), today)
+        File.force_symlink(File.safe_readlink(src), today)
       when "unsupported"
         # just ignore it
       else
@@ -1000,7 +1015,7 @@ module Pdumpfs
         begin
           update_file(s, l, t)
           dirs[t] = File.stat(s) if File.ftype(s) == "directory"
-        rescue Errno::ENOENT => e
+        rescue SystemCallError, InvalidSymbolicLink => e
           wprintf("%s: %s", src, e.message)
           next
         end
@@ -1021,18 +1036,18 @@ module Pdumpfs
         r = s.sub(%r[^#{Regexp.quote(src)}/?], "")
         t = File.join(dest, r)
 
-        type = detect_type(s)
-        report(type, s)
-        next if @dry_run
-
         begin
+          type = detect_type(s)
+          report(type, s)
+          next if @dry_run
+
           case type
           when "directory"
             File.mkpath(t)
-          when "new file"
+          when "new_file"
             copy(s, t)
           when "symlink"
-            File.force_symlink(File.readlink(s), t)
+            File.force_symlink(File.safe_readlink(s), t)
           when "unsupported"
             # just ignore it
           else
@@ -1040,7 +1055,7 @@ module Pdumpfs
           end
           chown_if_root(type, s, t)
           dirs[t] = File.stat(s) if File.ftype(s) == "directory"
-        rescue Errno::ENOENT => e
+        rescue SystemCallError, InvalidSymbolicLink => e
           wprintf("%s: %s", s, e.message)
           next
         end

@@ -4,6 +4,7 @@
 	(Pdumpfs::Pdumpfs::update_file): Use it.
 	(Pdumpfs::Pdumpfs::recursive_copy): Ditto.
 	(Pdumpfs::Pdumpfs::recursive_copy): Simplified using detect_type.
+	(File::real_exist?): New function.
 
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.
