@@ -2,6 +2,12 @@
 
 	* pdumpfs.in (Pdumpfs::Pdumpfs::latest_snapshot): Use Date.valid_date?.
 	(Pdumpfs::Pdumpfs::valid_date?): Removed.
+	(File::safe_readlink): Removed.
+	(Pdumpfs::FileMatcher::exclude?): Simplified. Don't rescue
+	Errno:ENOENT in this method. 
+	(Pdumpfs::Pdumpfs::update_snapshot): Rescue Errno::EACCES as well
+	as Errno::ENOENT.
+	(Pdumpfs::Pdumpfs::recursive_copy): Ditto.
 
 2004-08-10  Satoru Takabayashi  <satoru@namazu.org>
 
