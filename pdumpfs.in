@@ -164,6 +164,10 @@ if windows?
     pFILETIME
   end
 
+  LOCALE_USER_DEFAULT    = 0x400
+  LOCALE_SABBREVLANGNAME = 3
+  LOCALE_USE_CP_ACP      = 0x40000000
+
   def get_locale_name
     get_locale_info = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
     locale_name = " " * 32
@@ -333,9 +337,6 @@ if has_vruby?
     FontSize   = 14
     FontName   = "MS UI Gothic"
 
-    LOCALE_USER_DEFAULT    = 0x400
-    LOCALE_SABBREVLANGNAME = 3
-    LOCALE_USE_CP_ACP      = 0x40000000
     SW_HIDE                = 0
     SW_SHOWNORMAL          = 1
 
