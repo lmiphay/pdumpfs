@@ -832,7 +832,7 @@ module Pdumpfs
     end
 
     def create_latest_symlink (dest, today)
-      latest_day = File.dirname(today)
+      latest_day = File.dirname(make_relative_path(today, dest))
       latest_symlink = File.join(dest, "latest")
       File.force_symlink(latest_day, latest_symlink)
     end

@@ -33,6 +33,8 @@
 	(File::init): New method. Initialize $KCODE in the method.
 	(Pdumpfs::Pdumpfs::same_directory?): New method.
 	(Pdumpfs::Pdumpfs::start): Use it.
+	(Pdumpfs::Pdumpfs::create_latest_symlink): New method. Suggested
+	by Kentaro Fukuchi <fukuchi at megaui.net>
 	
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.
