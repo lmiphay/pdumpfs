@@ -1,5 +1,5 @@
 load 'pdumpfs'
-class MessageValidator
+class CatalogValidator
   def initialize (source_filename)
     @source_filename  = source_filename
     @has_error = false
@@ -47,7 +47,7 @@ class MessageValidator
 end
 
 if ARGV.length < 2
-  puts "usage: ruby message-validator.rb <catalog> <source...>"
+  puts "usage: ruby catalog-validator.rb <catalog> <source...>"
   exit
 end
 
@@ -57,7 +57,7 @@ load_catalog(catalog_file)
 
 ok = true
 ARGV.each {|source_file|
-  validator = MessageValidator.new(source_file)
+  validator = CatalogValidator.new(source_file)
   validator.validate
   ok = (ok and validator.ok?)
 }
