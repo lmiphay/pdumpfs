@@ -1,5 +1,10 @@
 2004-12-14  Satoru Takabayashi  <satoru@namazu.org>
 
+ 	* pdumpfs: Version 1.3 released.
+
+	* doc/pdumpfs-ja.html: Update modification.
+	* doc/pdumpfs.html: Ditto.
+
 	* pdumpfs.in (Pdumpfs::Pdumpfs::validate_directories): Fix an
 	error message for windows. The bug was reported by MORIOKA
 	Yasuhiro <yasuhiro.morioka at k5.dion.ne.jp>
