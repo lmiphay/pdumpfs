@@ -1117,7 +1117,7 @@ def parse_options
   usage if ARGV.length < 2
 
   # strip the trailing / to avoid basename(src) == ''.
-  src  = ARGV[0].sub(%r!/+$!, "")
+  src  = ARGV[0].sub(%r!/+$!, "") unless ARGV[0] == '/' #'
   dest = ARGV[1]
   base = ARGV[2]
 

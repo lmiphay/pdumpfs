@@ -1,3 +1,9 @@
+2004-08-09  Satoru Takabayashi  <satoru@namazu.org>
+
+	* pdumpfs.in (parse_options): Don't strip the trailing / if
+	ARGV[0] == "/". Suggested by Toshikazu Ichikawa <ichikawa at
+	toshikazu.org>
+
 2004-08-04  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (parse_options): Make the option parser quiet.
