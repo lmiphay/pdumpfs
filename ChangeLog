@@ -17,6 +17,8 @@
 	(Pdumpfs::Pdumpfs::make_relative_path): New method.
 	(Pdumpfs::Pdumpfs::update_snapshot): Use it.
 	(Pdumpfs::Pdumpfs::recursive_copy): Ditto.
+	(Pdumpfs::Pdumpfs::sub_directory?): New method.
+	(Pdumpfs::Pdumpfs::start): Use it.
 
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.
