@@ -1117,6 +1117,7 @@ module Pdumpfs
 
       if windows?
         unless ntfs?(dest)
+          fstype = get_filesystem_type(dest)
           raise sprintf("only NTFS is supported but %s is %s.", dest, fstype)
         end
       end

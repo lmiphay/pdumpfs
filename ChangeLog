@@ -1,3 +1,11 @@
+2004-12-14  Satoru Takabayashi  <satoru@namazu.org>
+
+	* pdumpfs.in (Pdumpfs::Pdumpfs::validate_directories): Fix an
+	error message for windows. The bug was reported by MORIOKA
+	Yasuhiro <yasuhiro.morioka at k5.dion.ne.jp>
+
+	* Makefile (VERSION): Bumped version number to 1.3.
+
 2004-10-28  Satoru Takabayashi  <satoru@namazu.org>
 
 	* doc/pdumpfs-ja.html: Update documentation.
