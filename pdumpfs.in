@@ -332,7 +332,7 @@ if has_vruby?
 
     def get_program_directory
       program_file_name = get_program_file_name
-      return File.directory(program_file_name)
+      return File.dirname(program_file_name)
     end
 
     def init_catalog (program_directory)
