@@ -1,5 +1,12 @@
 2004-06-22  Satoru Takabayashi  <satoru@namazu.org>
 
+	* doc/pdumpfs-ja.html: Moved from ..
+	* doc/pdumpfs.html: Ditto.
+	* doc/images/pdumpfs.png: New file.
+	* doc/images/pdumpfs-mini.png: New file.
+	* doc/images/pdumpfs-ja.png: New file.
+	* doc/images/pdumpfs-ja-mini.png: New file.
+
  	* pdumpfs: Version 1.0 released.
 
 	* Makefile (dist): Don't include  pdumpfs.exe.manifest.
