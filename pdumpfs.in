@@ -56,8 +56,8 @@ class InvalidSymbolicLink < Exception; end
 class File
   def self.safe_readlink (path)
     dest = File.readlink(path)
-    # On Linux, File.readlink("/proc/*/exe") may return a
-    # string containing a NUL character.
+    # On Linux 2.6.6, File.readlink("/proc/*/exe") may
+    # return a string containing a NUL character.
     if dest.include?("\0")
       raise InvalidSymbolicLink.new("invalid symbolic link: #{dest}") 
     end
@@ -120,7 +120,7 @@ if windows?
 
     dir.sub(pattern) do |match|
       WIN32OLE.new("WScript.Shell").SpecialFolders(match)
-    end.tr('\\','/')
+    end.tr('\\', File::SEPARATOR)
   end
 
   def get_filesystem_type (path)
@@ -333,13 +333,13 @@ if has_vruby?
     def get_exe_file_name
       path = "\0" * 1024
       length = GetModuleFileName.call(0 ,path, path.length)
-      return path[0, length].tr('\\', '/')
+      return path[0, length].tr('\\', File::SEPARATOR)
     end
 
     def get_program_file_name
       exe_file_name = get_exe_file_name
       if File.basename(exe_file_name) == "ruby.exe"
-        return File.expand_path($0).gsub('\\', '/')
+        return File.expand_path($0).gsub('\\', File::SEPARATOR)
       else
         return exe_file_name
       end
@@ -827,6 +827,12 @@ module Pdumpfs
       @written_bytes = 0
     end
 
+    def create_latest_symlink (dest, today)
+      latest_day = File.dirname(today)
+      latest_symlink = File.join(dest, "latest")
+      File.force_symlink(latest_day, latest_symlink)
+    end
+
     def start (src, dest, base = nil)
       start_time = Time.now
 
@@ -848,6 +854,7 @@ module Pdumpfs
       end
       return if @dry_run
 
+      create_latest_symlink(dest, today)
       elapsed = Time.now - start_time
       add_log_entry(src, today, elapsed) 
     end
@@ -880,15 +887,42 @@ module Pdumpfs
     end
 
     def datedir (date)
-      sprintf "%d/%02d/%02d", date.year, date.month, date.day
+      s = File::SEPARATOR
+      sprintf "%d%s%02d%s%02d", date.year, s, date.month, s, date.day
+    end
+
+    def valid_date? (year, month, day)
+      begin
+        t = Time.mktime(year, month, day)
+        return (t.year == year and t.month == month and t.day == day)
+      rescue
+        return false
+      end
+    end
+
+    def past_date? (year, month, day)
+      t = Time.now
+      [year, month, day].zip([t.year, t.month, t.day]).each {|x, y|
+        return true if x < y
+      }
+      return false
     end
 
     def latest_snapshot (src, dest, base)
-      for i in 1 .. 31  # allow at most 31 days absence
-        x = File.join(dest, datedir(Date.today - i), base)
-        return x if File.directory?(x)
-      end
-      nil
+      # FIXME: Y10K problem.
+      glob_path = File.join(dest, 
+                            "[0-9][0-9][0-9][0-9]",
+                            "[0-9][0-9]", 
+                            "[0-9][0-9]")
+      Dir.glob(glob_path).sort {|a, b| b <=> a }.find {|dir|
+        day, month, year = dir.split(File::SEPARATOR).reverse.map {|x| x.to_i }
+        path = File.join(dir, base)
+        if File.directory?(path) and valid_date?(year, month, day) and
+            past_date?(year, month, day)
+          return path
+        end
+      }
+      return nil
     end
 
     # We don't use File.copy for calling @interval_proc.
