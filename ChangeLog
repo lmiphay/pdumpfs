@@ -1,6 +1,7 @@
 2004-08-11  Satoru Takabayashi  <satoru@namazu.org>
 
-	* pdumpfs.in 
+	* pdumpfs.in (Pdumpfs::Pdumpfs::latest_snapshot): Use Date.valid_date?.
+	(Pdumpfs::Pdumpfs::valid_date?): Removed.
 
 2004-08-10  Satoru Takabayashi  <satoru@namazu.org>
 

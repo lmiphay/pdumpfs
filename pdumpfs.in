@@ -50,6 +50,7 @@
 require 'find'
 require 'ftools'
 require 'getoptlong'
+require 'date'
 
 class InvalidSymbolicLink < Exception; end
 class File
@@ -925,15 +926,6 @@ module Pdumpfs
       sprintf "%d%s%02d%s%02d", date.year, s, date.month, s, date.day
     end
 
-    def valid_date? (year, month, day)
-      begin
-        t = Time.mktime(year, month, day)
-        return (t.year == year and t.month == month and t.day == day)
-      rescue
-        return false
-      end
-    end
-
     def past_date? (year, month, day, t)
       ([year, month, day] <=> [t.year, t.month, t.day]) < 0
     end
@@ -946,7 +938,7 @@ module Pdumpfs
       Dir.glob(glob_path).sort {|a, b| b <=> a }.find {|dir|
         day, month, year = File.split_all(dir).reverse.map {|x| x.to_i }
         path = File.join(dir, base)
-        if File.directory?(path) and valid_date?(year, month, day) and
+        if File.directory?(path) and Date.valid_date?(year, month, day) and
             past_date?(year, month, day, start_time)
           return path
         end
