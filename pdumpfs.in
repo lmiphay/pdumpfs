@@ -1136,7 +1136,7 @@ def usage
 end
 
 def version
-  puts "Usage: pdumpfs #{Pdumpfs::VERSION}"
+  puts "pdumpfs #{Pdumpfs::VERSION}"
   exit 0
 end
 
