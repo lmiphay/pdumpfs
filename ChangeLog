@@ -1,5 +1,7 @@
 2004-08-11  Satoru Takabayashi  <satoru@namazu.org>
 
+ 	* pdumpfs: Version 1.2 released.
+
 	* pdumpfs.in (Pdumpfs::Pdumpfs::latest_snapshot): Use Date.valid_date?.
 	(Pdumpfs::Pdumpfs::valid_date?): Removed.
 	(File::safe_readlink): Removed.
@@ -72,6 +74,8 @@
 	* ChangeLog: Obfuscate email addresses to prevent spams.
 
 2004-07-13  Satoru Takabayashi  <satoru@namazu.org>
+
+ 	* pdumpfs: Version 1.1 released.
 
 	* Makefile (VERSION): Bumped version number to 1.1.
 
