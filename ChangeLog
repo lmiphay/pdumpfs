@@ -1,3 +1,7 @@
+2004-07-13  Satoru Takabayashi  <satoru@namazu.org>
+
+	* Makefile (VERSION): Bumped version number to 1.1.
+
 2004-07-09  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (File::PdumpfsForm::get_program_directory): New method.
