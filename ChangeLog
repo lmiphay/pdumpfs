@@ -1,3 +1,7 @@
+2004-08-11  Satoru Takabayashi  <satoru@namazu.org>
+
+	* pdumpfs.in 
+
 2004-08-10  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (Pdumpfs::Pdumpfs::report): New method.
@@ -20,7 +24,9 @@
 	(Pdumpfs::Pdumpfs::sub_directory?): New method.
 	(Pdumpfs::Pdumpfs::start): Use it.
 	(File::init): New method. Initialize $KCODE in the method.
-
+	(Pdumpfs::Pdumpfs::same_directory?): New method.
+	(Pdumpfs::Pdumpfs::start): Use it.
+	
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.
 	(Pdumpfs::Pdumpfs::update_file): Simplified.

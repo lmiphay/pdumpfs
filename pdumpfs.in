@@ -851,11 +851,17 @@ module Pdumpfs
       File.force_symlink(latest_day, latest_symlink)
     end
 
+    def same_directory? (src, dest)
+      src  = File.expand_path(src)
+      dest = File.expand_path(dest)
+      return src == dest
+    end
+
     def sub_directory? (src, dest)
       src  = File.expand_path(src)
       dest = File.expand_path(dest)
       src  += File::SEPARATOR unless /#{File::SEPARATOR}$/.match(src)
-      return (src == dest or /^#{Regexp.quote(src)}/.match(dest))
+      return /^#{Regexp.quote(src)}/.match(dest)
     end
 
     def start (src, dest, base = nil)
@@ -866,7 +872,7 @@ module Pdumpfs
         src  = expand_special_folders(src)
         dest = expand_special_folders(dest)
       end
-      if sub_directory?(src, dest)
+      if same_directory?(src, dest) or sub_directory?(src, dest)
         raise "cannot copy a directory, `#{src}', into itself, `#{dest}'"
       end
 
