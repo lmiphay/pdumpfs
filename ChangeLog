@@ -14,6 +14,9 @@
 	(File::PdumpfsForm::get_program_file_name): Ditto.
 	(Pdumpfs::Pdumpfs::start): Don't use Date.today any longer.
 	(Pdumpfs::Pdumpfs::latest_snapshot): Take a new parameter: start_time.
+	(Pdumpfs::Pdumpfs::make_relative_path): New method.
+	(Pdumpfs::Pdumpfs::update_snapshot): Use it.
+	(Pdumpfs::Pdumpfs::recursive_copy): Ditto.
 
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.

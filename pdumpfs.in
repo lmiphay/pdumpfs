@@ -91,6 +91,10 @@ class File
   def self.readable_file? (path)
     File.file?(path) and File.readable?(path)
   end
+
+  def self.split_all (path)
+    path.split(File::SEPARATOR)
+  end
 end
 
 def wprintf (format, *args)
@@ -907,13 +911,12 @@ module Pdumpfs
     end
 
     def latest_snapshot (start_time, src, dest, base)
+      dd   = "[0-9][0-9]"
+      dddd = dd + dd
       # FIXME: Y10K problem.
-      glob_path = File.join(dest, 
-                            "[0-9][0-9][0-9][0-9]",
-                            "[0-9][0-9]", 
-                            "[0-9][0-9]")
+      glob_path = File.join(dest, dddd, dd, dd)
       Dir.glob(glob_path).sort {|a, b| b <=> a }.find {|dir|
-        day, month, year = dir.split(File::SEPARATOR).reverse.map {|x| x.to_i }
+        day, month, year = File.split_all(dir).reverse.map {|x| x.to_i }
         path = File.join(dir, base)
         if File.directory?(path) and valid_date?(year, month, day) and
             past_date?(year, month, day, start_time)
@@ -1032,6 +1035,16 @@ module Pdumpfs
       }
     end
 
+    def make_relative_path (path, base)
+      path_parts = File.split_all(path)
+      base_parts = File.split_all(base)
+      base_parts.each {|base_part|
+        path_part = path_parts.shift
+        raise "#{path}: does not contain #{base}" unless base_part == path_part
+      }
+      File.join(path_parts)
+    end
+
     def update_snapshot (src, latest, today)
       dirs = {};
 
@@ -1039,8 +1052,7 @@ module Pdumpfs
         if @matcher.exclude?(s)
           if File.lstat(s).directory? then Find.prune() else next end
         end
-
-        r = s.sub(%r[^#{Regexp.quote src}/?], "")  # relative path 
+        r = make_relative_path(s, src)
         l = File.join(latest, r)  # path of the latest  snapshot
         t = File.join(today, r)   # path of the today's snapshot
 
@@ -1065,7 +1077,7 @@ module Pdumpfs
         if @matcher.exclude?(s)
           if File.lstat(s).directory? then Find.prune() else next end
         end
-        r = s.sub(%r[^#{Regexp.quote(src)}/?], "")
+        r = make_relative_path(s, src)
         t = File.join(dest, r)
 
         begin
