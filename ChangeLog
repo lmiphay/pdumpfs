@@ -17,6 +17,8 @@
 	(Pdumpfs::Pdumpfs::make_relative_path): New method.
 	(Pdumpfs::Pdumpfs::update_snapshot): Use it.
 	(Pdumpfs::Pdumpfs::recursive_copy): Ditto.
+	(File::PdumpfsForm::init_catalog): Don't set $KCODE in the method.
+	(File::init): New method and set $KCODE in the method.
 
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.

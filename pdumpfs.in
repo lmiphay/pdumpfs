@@ -164,6 +164,20 @@ if windows?
     pFILETIME
   end
 
+  def get_locale_name
+    get_locale_info = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
+    locale_name = " " * 32
+    status = get_locale_info.call(LOCALE_USER_DEFAULT, 
+                                  LOCALE_SABBREVLANGNAME | LOCALE_USE_CP_ACP,
+                                  locale_name, 32)
+    if status == 0
+      return nil
+    else
+      return locale_name.split("\x00").first
+    end
+  end
+
+
   GENERIC_WRITE   = 0x40000000
   OPEN_EXISTING = 3
   FILE_FLAG_BACKUP_SEMANTICS =  0x02000000
@@ -190,9 +204,15 @@ if windows?
 
     return 0
   end
+
+  def init
+    $KCODE = "SJIS" if get_locale_name == "JPN"
+  end
+
+  init
 end
 
-$w32_libraries_loaded = false
+$vruby_libraries_loaded = false
 begin
   require "vr/vrcontrol"
   require 'vr/vrcomctl'
@@ -200,12 +220,12 @@ begin
   require "vr/vrhandler"
   require "vr/vrtray"
   require 'vr/vrdialog'
-  $w32_libraries_loaded = true
+  $vruby_libraries_loaded = true
 rescue LoadError    => e
 end
 
 def has_vruby?
-  $w32_libraries_loaded
+  $vruby_libraries_loaded
 end
 
 if has_vruby?
@@ -320,21 +340,8 @@ if has_vruby?
     SW_SHOWNORMAL          = 1
 
     ShellExecute      = Win32API.new("shell32",  "ShellExecute", "LPPPPL", 'L')
-    GetLocaleInfo     = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
     LoadIcon          = Win32API.new("user32",   "LoadIcon", "II", "I")
     GetModuleFileName = Win32API.new("kernel32", "GetModuleFileName","IPI","I")
-
-    def get_locale_name
-      locale_name = " " * 32
-      status = GetLocaleInfo.call(LOCALE_USER_DEFAULT, 
-                                  LOCALE_SABBREVLANGNAME | LOCALE_USE_CP_ACP,
-                                  locale_name, 32)
-      if status == 0
-        return nil
-      else
-        return locale_name.split("\x00").first
-      end
-    end
 
     def get_exe_file_name
       path = "\0" * 1024
@@ -359,7 +366,6 @@ if has_vruby?
     def init_catalog (program_directory)
       locale_name  = get_locale_name
       if locale_name
-        $KCODE = "SJIS" if locale_name == "JPN"
         filename = File.join(program_directory,
                              sprintf("catalog.%s.txt", locale_name))
         @catalog = load_catalog(filename) if File.readable_file?(filename)
