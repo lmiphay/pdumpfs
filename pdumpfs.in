@@ -298,9 +298,10 @@ if has_vruby?
     SW_HIDE                = 0
     SW_SHOWNORMAL          = 1
 
-    ShellExecute  = Win32API.new("shell32",  "ShellExecute", "LPPPPL", 'L')
-    GetLocaleInfo = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
-    LoadIcon      = Win32API.new("user32",   "LoadIcon", "II", "I")
+    ShellExecute      = Win32API.new("shell32",  "ShellExecute", "LPPPPL", 'L')
+    GetLocaleInfo     = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
+    LoadIcon          = Win32API.new("user32",   "LoadIcon", "II", "I")
+    GetModuleFileName = Win32API.new("kernel32", "GetModuleFileName","IPI","I")
 
     def get_locale_name
       locale_name = " " * 32
@@ -314,18 +315,31 @@ if has_vruby?
       end
     end
 
-    def program_name
-      filename = File.expand_path($0).gsub("/", '\\')
-      exe = filename + ".exe"
-      filename = exe if File.exist?(exe)
-      return filename
+    def get_exe_file_name
+      path = "\0" * 1024
+      length = GetModuleFileName.call(0 ,path, path.length)
+      return path[0, length].tr('\\', '/')
     end
 
-    def init_catalog
-      locale_name = get_locale_name
+    def get_program_file_name
+      exe_file_name = get_exe_file_name
+      if File.basename(exe_file_name) == "ruby.exe"
+        return File.expand_path($0).gsub('\\', '/')
+      else
+        return exe_file_name
+      end
+    end
+
+    def get_program_directory
+      program_file_name = get_program_file_name
+      return File.directory(program_file_name)
+    end
+
+    def init_catalog (program_directory)
+      locale_name  = get_locale_name
       if locale_name
         $KCODE = "SJIS" if locale_name == "JPN"
-        filename = File.join(File.dirname(program_name), 
+        filename = File.join(program_directory,
                              sprintf("catalog.%s.txt", locale_name))
         @catalog = load_catalog(filename) if File.readable_file?(filename)
       end
@@ -403,7 +417,7 @@ if has_vruby?
         hour = value.first
         min  = value.last
         command_line = sprintf('"%s" -l "%s" "%s" "%s"', 
-                               program_name,
+                               get_program_file_name,
                                @log_file,
                                @from_combobox.text,
                                @to_combobox.text)
@@ -436,12 +450,13 @@ if has_vruby?
     end
 
     def construct
+      program_directory = get_program_directory
       @in_tasktray = false
-      @log_file = File.join(File.dirname(program_name), "pdumpfs.log")
-      @config_file = File.join(File.dirname(program_name), "pdumpfs.txt")
+      @log_file = File.join(program_directory, "pdumpfs.log")
+      @config_file = File.join(program_directory, "pdumpfs.txt")
       @last_path = ""
 
-      init_catalog
+      init_catalog(program_directory)
       add_controls
       add_menus
       clear_history
