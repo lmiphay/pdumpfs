@@ -18,7 +18,7 @@
 2004-06-30  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (main): Add \n to printf for displaying errors. Fix
-	the bug reported by SASADA Koichi<ko1 @ atdot.net>. [pdumpfs-new:12]
+	the bug reported by SASADA Koichi<ko1 at atdot.net>. [pdumpfs-new:12]
 	(parse_options): Add a check for the availability of File.fnmatch.
 
 2004-06-22  Satoru Takabayashi  <satoru@namazu.org>
@@ -170,7 +170,7 @@
 	* Makefile: New file.
 
 	* pdumpfs: Apply a patch by Takeshi Komiya
-	<katsuwo @ monochrome.jp>. W32 support now requires Ruby 1.8 not 1.7.
+	<katsuwo at monochrome.jp>. W32 support now requires Ruby 1.8 not 1.7.
 
 2004-03-31  Satoru Takabayashi  <satoru@namazu.org>
 
@@ -180,7 +180,7 @@
 	(update_file): Fixed the symlink handling of the case when the
 	latest backup file is a real file but the current source file is
 	changed to symlink. Reported by "KAMOSAWA, Masao"
-	<jcd00743 @ nifty.ne.jp>. 
+	<jcd00743 at nifty.ne.jp>. 
 
 	* pdumpfs: Bumped version number to 0.9.
 
@@ -216,12 +216,12 @@
 	* pdumpfs (parse_options): New option: --version.
 
 	* pdumpfs: Applied "pdumpfs exclude patch" by Takeshi Komiya
-	<katsuwo @ monochrome.jp>.
+	<katsuwo at monochrome.jp>.
 	<http://www.monochrome.jp/~katsuwo/software/pdumpfs-exclude/>
 
 	* pdumpfs: Applied "pdumpfs Win32/NTFS support patch" by Yasuhiro
-	Morioka <yasuhiro.morioka @ k5.dion.ne.jp> and Takeshi Komiya
-	<katsuwo @ monochrome.jp>.
+	Morioka <yasuhiro.morioka at k5.dion.ne.jp> and Takeshi Komiya
+	<katsuwo at monochrome.jp>.
 	<http://www.monochrome.jp/~katsuwo/software/pdumpfs-win32ntfs/>
 
 	* pdumpfs: Applied a patch to skip socket/deviceb/etc. by Takeshi
@@ -232,32 +232,32 @@
  	* pdumpfs: Version 0.6 released.
 
 	* pdumpfs (recursive_copy): Allow disappearing files while
-	recursive_copy runs. Suggested by Roger Klorese <rogerk @ vmware.com>.
+	recursive_copy runs. Suggested by Roger Klorese <rogerk at vmware.com>.
 	(update_snapshot): Ditto.
 
 2002-02-16  Satoru Takabayashi  <satoru@namazu.org>
 
 	* man/ja/man8/pdumpfs.8: Reformatted by
-	"Akinori MUSHA" <knu @ iDaemons.org>
+	"Akinori MUSHA" <knu at iDaemons.org>
 
 	* man/man8/pdumpfs.8: Reformatted by
-	"Akinori MUSHA" <knu @ iDaemons.org>
+	"Akinori MUSHA" <knu at iDaemons.org>
 
 2002-02-13  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs (main): Use File.umask(0077) to prevent others from
 	peeking o-r or g-r directories. 
-	Suggested by akira yamada <akira @ arika.org>. 
+	Suggested by akira yamada <akira at arika.org>. 
 
 2002-02-12  Satoru Takabayashi  <satoru@namazu.org>
 
  	* pdumpfs: Version 0.5 released.
 
 	* man/ja/man8/pdumpfs.8: New file. Contributed by 
-	Hiroyuki Shimada <shimaden @ din.or.jp>
+	Hiroyuki Shimada <shimaden at din.or.jp>
 
 	* man/man8/pdumpfs.8: New file. Contributed by
-	Hiroyuki Shimada <shimaden @ din.or.jp>
+	Hiroyuki Shimada <shimaden at din.or.jp>
 
 	* pdumpfs (restore_dir_attributes): New method.
 	(update_snapshot): Use restore_dir_attributes to preserve
@@ -267,7 +267,7 @@
 2001-12-17  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs (main): Call main only if __FILE__ == $0.
-	- Suggested by akira yamada <akira @ arika.org>.
+	- Suggested by akira yamada <akira at arika.org>.
 
 2001-10-19  Satoru Takabayashi  <satoru@namazu.org>
 
@@ -277,7 +277,7 @@
 
 2001-08-25  Satoru Takabayashi  <satoru@namazu.org>
 
-	* pdumpfs: Apply Kazuhiro NISHIYAMA <zn @ mbf.nifty.com>'s patch.
+	* pdumpfs: Apply Kazuhiro NISHIYAMA <zn at mbf.nifty.com>'s patch.
 	- Destination basename can be specified as a command line option.
 	- Use Regexp.quote for a souce directory in a regex.
 	- Use File.chown if invoked by root.
