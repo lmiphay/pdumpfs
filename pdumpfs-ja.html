@@ -11,7 +11,7 @@
 <p class="lang-navigator"><a href="pdumpfs.html">English</a> | Japanese</p>
 
 <h1>pdumpfs: Plan9もどきのバックアップシステム</h1>
-<p class="last-modified">最終更新日: 2004-06-07 (公開日: 2001-02-18)</p>
+<p class="last-modified">最終更新日: 2004-06-22 (公開日: 2001-02-18)</p>
 
 <hr />
 
@@ -22,14 +22,18 @@ pdumpfs は <a href="http://plan9.aichi-u.ac.jp/">Plan9</a> の <a href="http://pl
 <p>
 pdumpfs はバックアップ先ディレクトリに「年/月/日」の形式でス ナップショットを保存します。初回のみバックアップ対象ディレク トリ全体をコピーして、2日目以降は差分でバックアップしていき ます。ディスクの消費量を節約するために、更新されなかったファ イルは前日のスナップショットのファイルへのハードリンクとして 記録されます。
 </p>
-<p>
-最新版は<a href="http://namazu.org/~satoru/pdumpfs/">http://namazu.org/~satoru/pdumpfs/</a> から入手可能です。
-</p>
 
 <h2><a name="news" id="news">新着情報</a></h2>
 
 <ul>
-<li><em>2004-05-11</em>: <a href="#download">pdumpfs 0.9</a>を公開<br />
+<li><em>2004-06-22</em>: <a href="#download">pdumpfs 1.0</a> を公開<br />
+<ul>
+<li>Windows 用の GUI に対応しました。
+<a href="http://www.osk.3web.ne.jp/~nyasu/software/vrproject.html">VisualuRuby</a>
+を利用しています。</li>
+</ul></li>
+
+<li><em>2004-05-11</em>: <a href="#download">pdumpfs 0.9</a> を公開<br />
 <ul>
 <li>いくつかのバグを修正しました。 ("unexpected next" バグなど)</li>
 <li><a href="http://exerb.sourceforge.jp/">Exerb</a> を用いて 
@@ -146,8 +150,8 @@ pdumpfs をソースからインストールするには、パッケージを展開し
 </p>
 
 <ul>
-<li><a href="pdumpfs-0.9.tar.gz">pdumpfs-0.9.tar.gz</a></li>
-<li><a href="pdumpfs-w32-0.9.zip">pdumpfs-w32-0.9.zip</a> (experimental)</li>
+<li><a href="pdumpfs-1.0.tar.gz">pdumpfs-1.0.tar.gz</a></li>
+<li><a href="pdumpfs-w32-1.0.zip">pdumpfs-w32-1.0.zip</a> (experimental)</li>
 
 <li><a href="http://sourceforge.net/cvs/?group_id=111004">CVS</a></li>
 </ul>
