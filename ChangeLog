@@ -12,6 +12,8 @@
 	(File::expand_special_folders): Ditto.
 	(File::PdumpfsForm::get_exe_file_name): Ditto.
 	(File::PdumpfsForm::get_program_file_name): Ditto.
+	(Pdumpfs::Pdumpfs::start): Don't use Date.today any longer.
+	(Pdumpfs::Pdumpfs::latest_snapshot): Take a new parameter: start_time.
 
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.
