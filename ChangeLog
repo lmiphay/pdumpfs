@@ -1,7 +1,29 @@
+2004-05-22  Satoru Takabayashi  <satoru@namazu.org>
+
+	* pdumpfs.in (Pdumpfs::Pdumpfs::convert_bytes): New method.
+
 2004-05-21  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (Pdumpfs::PdumpfsForm::task_scheduler_menu_clicked):
 	New method.
+	(Pdumpfs::TimerDialog): Removed.
+	(Pdumpfs::TaskSchedulerDialog::construct): New class.
+	(Pdumpfs::PdumpfsForm::set_timer_menu_clicked): Removed.
+	(Pdumpfs::PdumpfsForm::unset_timer_menu_clicked): Ditto.
+	(Pdumpfs::PdumpfsForm::calc_interval): Ditto.
+	(Pdumpfs::PdumpfsForm::update_statusbar): Ditto.
+	(Pdumpfs::PdumpfsForm::start_timer_thread): Ditto.
+	(Pdumpfs::PdumpfsForm::terminate_timer_thread): Ditto.
+	(Pdumpfs::PdumpfsForm::restart_timer_thread): Ditto.
+	(Pdumpfs::PdumpfsForm::save_config): Remove backup_time.
+	(Pdumpfs::PdumpfsForm::load_config): Ditto.
+	(Pdumpfs::TaskSchedulerDialog::construct): Simplified.
+	(Pdumpfs::PdumpfsForm::start_statusbar_thread): Removed.
+	(ntfs?): New method.
+	(Pdumpfs::Pdumpfs): New class.
+	(File::PdumpfsForm::save_menu_clicked): Removed.
+	(File::PdumpfsForm::save_script): Ditto.
+	(File::PdumpfsForm::escape): Ditto.
 
 2004-05-20  Satoru Takabayashi  <satoru@namazu.org>
 
