@@ -1,23 +1,27 @@
-2004-08-02  Satoru Takabayashi  <satoru @ namazu.org>
+2004-08-04  Satoru Takabayashi  <satoru@namazu.org>
+
+	* pdumpfs.in (parse_options): Make the option parser quiet.
+
+2004-08-02  Satoru Takabayashi  <satoru@namazu.org>
 
 	* ChangeLog: Obfuscate email addresses to prevent spams.
 
-2004-07-13  Satoru Takabayashi  <satoru @ namazu.org>
+2004-07-13  Satoru Takabayashi  <satoru@namazu.org>
 
 	* Makefile (VERSION): Bumped version number to 1.1.
 
-2004-07-09  Satoru Takabayashi  <satoru @ namazu.org>
+2004-07-09  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (File::PdumpfsForm::get_program_directory): New method.
 	(File::PdumpfsForm::get_program_file_name): Renamed from program_name.
 
-2004-06-30  Satoru Takabayashi  <satoru @ namazu.org>
+2004-06-30  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (main): Add \n to printf for displaying errors. Fix
 	the bug reported by SASADA Koichi<ko1 @ atdot.net>. [pdumpfs-new:12]
 	(parse_options): Add a check for the availability of File.fnmatch.
 
-2004-06-22  Satoru Takabayashi  <satoru @ namazu.org>
+2004-06-22  Satoru Takabayashi  <satoru@namazu.org>
 
 	* doc/pdumpfs-ja.html: Moved from ..
 	* doc/pdumpfs.html: Ditto.
@@ -32,11 +36,11 @@
 
 	* Makefile (VERSION): Bumped version number to 1.0.
 
-2004-05-22  Satoru Takabayashi  <satoru @ namazu.org>
+2004-05-22  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (Pdumpfs::Pdumpfs::convert_bytes): New method.
 
-2004-05-21  Satoru Takabayashi  <satoru @ namazu.org>
+2004-05-21  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (Pdumpfs::PdumpfsForm::task_scheduler_menu_clicked):
 	New method.
@@ -59,14 +63,14 @@
 	(File::PdumpfsForm::save_script): Ditto.
 	(File::PdumpfsForm::escape): Ditto.
 
-2004-05-20  Satoru Takabayashi  <satoru @ namazu.org>
+2004-05-20  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (PdumpfsForm::do_backup): Use default values for
 	parameters.
 	(Pdumpfs::PdumpfsForm::save_script): New method.
 	(Pdumpfs::PdumpfsForm::save_menu_clicked): Ditto.
 
-2004-05-19  Satoru Takabayashi  <satoru @ namazu.org>
+2004-05-19  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in: (File::readable_file?): New method.
 	(Pdumpfs::hour): New method.
@@ -117,7 +121,7 @@
 	(Pdumpfs::PdumpfsForm::add_log_entry): Ditto.
 	(Pdumpfs::PdumpfsForm::do_backup): Refined.
 
-2004-05-18  Satoru Takabayashi  <satoru @ namazu.org>
+2004-05-18  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (GetText): New module.
 	(Pdumpfs::Catalog): New class.
@@ -128,7 +132,7 @@
 	* catalog-validator.rb: New file.
 	* catalog.jpn: New file.
 
-2004-05-12  Satoru Takabayashi  <satoru @ namazu.org>
+2004-05-12  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs.in (validate): New function.
 	(main): Use it.
@@ -147,7 +151,7 @@
 
 	* Makefile (VERSION): Bumped version number to 0.99
 
-2004-05-11  Satoru Takabayashi  <satoru @ namazu.org>
+2004-05-11  Satoru Takabayashi  <satoru@namazu.org>
 
  	* pdumpfs: Version 0.9 released.
 
@@ -161,14 +165,14 @@
 
 	* pdumpfs.in (File::force_symlink): New method.
 
-2004-05-10  Satoru Takabayashi  <satoru @ namazu.org>
+2004-05-10  Satoru Takabayashi  <satoru@namazu.org>
 
 	* Makefile: New file.
 
 	* pdumpfs: Apply a patch by Takeshi Komiya
 	<katsuwo @ monochrome.jp>. W32 support now requires Ruby 1.8 not 1.7.
 
-2004-03-31  Satoru Takabayashi  <satoru @ namazu.org>
+2004-03-31  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs: (File::real_file?): New function.
 	(same_file?): Use it.
@@ -188,7 +192,7 @@
 
 	* pdumpfs: Bumped version number to 0.8.
 
-2004-03-30  Satoru Takabayashi  <satoru @ namazu.org>
+2004-03-30  Satoru Takabayashi  <satoru@namazu.org>
 
  	* pdumpfs: Version 0.7 released.
 
@@ -223,7 +227,7 @@
 	* pdumpfs: Applied a patch to skip socket/deviceb/etc. by Takeshi
 	Komiya.	[pdumpfs:41]
 
-2002-08-06  Satoru Takabayashi  <satoru @ namazu.org>
+2002-08-06  Satoru Takabayashi  <satoru@namazu.org>
 
  	* pdumpfs: Version 0.6 released.
 
@@ -231,7 +235,7 @@
 	recursive_copy runs. Suggested by Roger Klorese <rogerk @ vmware.com>.
 	(update_snapshot): Ditto.
 
-2002-02-16  Satoru Takabayashi  <satoru @ namazu.org>
+2002-02-16  Satoru Takabayashi  <satoru@namazu.org>
 
 	* man/ja/man8/pdumpfs.8: Reformatted by
 	"Akinori MUSHA" <knu @ iDaemons.org>
@@ -239,13 +243,13 @@
 	* man/man8/pdumpfs.8: Reformatted by
 	"Akinori MUSHA" <knu @ iDaemons.org>
 
-2002-02-13  Satoru Takabayashi  <satoru @ namazu.org>
+2002-02-13  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs (main): Use File.umask(0077) to prevent others from
 	peeking o-r or g-r directories. 
 	Suggested by akira yamada <akira @ arika.org>. 
 
-2002-02-12  Satoru Takabayashi  <satoru @ namazu.org>
+2002-02-12  Satoru Takabayashi  <satoru@namazu.org>
 
  	* pdumpfs: Version 0.5 released.
 
@@ -260,18 +264,18 @@
 	attributes of directories.
 	(recursive_copy): Ditto.
 
-2001-12-17  Satoru Takabayashi  <satoru @ namazu.org>
+2001-12-17  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs (main): Call main only if __FILE__ == $0.
 	- Suggested by akira yamada <akira @ arika.org>.
 
-2001-10-19  Satoru Takabayashi  <satoru @ namazu.org>
+2001-10-19  Satoru Takabayashi  <satoru@namazu.org>
 
  	* pdumpfs: Version 0.4 released.
 
 	* pdumpfs: (latest_snapshot): Allow 31 days of absence.
 
-2001-08-25  Satoru Takabayashi  <satoru @ namazu.org>
+2001-08-25  Satoru Takabayashi  <satoru@namazu.org>
 
 	* pdumpfs: Apply Kazuhiro NISHIYAMA <zn @ mbf.nifty.com>'s patch.
 	- Destination basename can be specified as a command line option.
@@ -280,29 +284,29 @@
 	- Use File.lchown if available.
 	- Avoid utime for symlinks.
 
-2001-02-21  Satoru Takabayashi  <satoru-t @ is.aist-nara.ac.jp>
+2001-02-21  Satoru Takabayashi  <satoru-t@is.aist-nara.ac.jp>
 
 	* pdumpfs: Version 0.3 released.
 
 	* pdumpfs (update_file): Fix directory handling bug.
 
-2001-02-20  Satoru Takabayashi  <satoru-t @ is.aist-nara.ac.jp>
+2001-02-20  Satoru Takabayashi  <satoru-t@is.aist-nara.ac.jp>
 
 	* pdumpfs: Version 0.2 released.
 
 	* pdumpfs: Fix trivial bugs.
 
-2001-02-19  Satoru Takabayashi  <satoru-t @ is.aist-nara.ac.jp>
+2001-02-19  Satoru Takabayashi  <satoru-t@is.aist-nara.ac.jp>
 
 	* pdumpfs: Version 0.1 released.
 
 	* pdumpfs (genpath): Abolished.
 
-2001-02-18  Satoru Takabayashi  <satoru-t @ is.aist-nara.ac.jp>
+2001-02-18  Satoru Takabayashi  <satoru-t@is.aist-nara.ac.jp>
 
 	* pdumpfs: Rewrite it in Ruby
 
-2001-02-15  Satoru Takabayashi  <satoru-t @ is.aist-nara.ac.jp>
+2001-02-15  Satoru Takabayashi  <satoru-t@is.aist-nara.ac.jp>
 
 	* pdumpfs: Prototyping with shell script
 

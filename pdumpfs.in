@@ -1088,6 +1088,7 @@ def parse_options
                      ['--help', '-h',      GetoptLong::NO_ARGUMENT],
                      ['--version', '-v',   GetoptLong::NO_ARGUMENT]
                      )
+  parser.quiet = true
   parser.each_option do |name, arg|
     case name
     when '--exclude'
