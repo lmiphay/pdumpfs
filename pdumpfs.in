@@ -76,7 +76,7 @@ class File
   end
 end
 
-def eprintf (format, *args)
+def wprintf (format, *args)
   STDERR.printf("pdumpfs: " + format + "\n", *args)
 end
 
@@ -796,7 +796,7 @@ module Pdumpfs
           return true
         end
       rescue Errno::ENOENT => e
-        STDERR.puts e.message
+        wprintf("%s", e.message)
       end
       return false
     end
@@ -807,6 +807,7 @@ module Pdumpfs
       @matcher  = (config[:matcher]  or NullMatcher.new)
       @reporter = (config[:reporter] or lambda {|x| puts x })
       @log_file = (config[:log_file] or nil)
+      @dry_run  = (config[:dry_run] or false)
       @interval_proc = (config[:interval_proc] or lambda {})
       @written_bytes = 0
     end
@@ -824,7 +825,7 @@ module Pdumpfs
       today  = File.join(dest, datedir(Date.today), base)
 
       File.umask(0077)
-      File.mkpath(today)
+      File.mkpath(today) unless @dry_run
       if latest
         update_snapshot(src, latest, today)
       else
@@ -832,7 +833,7 @@ module Pdumpfs
       end
 
       elapsed = Time.now - start_time
-      add_log_entry(src, today, elapsed)
+      add_log_entry(src, today, elapsed) unless @dry_run
     end
 
     def convert_bytes (bytes)
@@ -903,58 +904,74 @@ module Pdumpfs
       File.chmod(stat.mode, dest) # not necessary. just to make sure
     end
 
-    def update_file (s, l, t)
+    def detect_type (src, latest)
       type = "unsupported"
-      if File.real_directory?(s)
+      if File.real_directory?(src)
         type = "directory"
-        File.mkpath(t)
       else
-        if File.real_file?(l)
-          case File.ftype(s)
+        if File.real_file?(latest)
+          case File.ftype(src)
           when "file"
-            if same_file?(s, l)
+            if same_file?(src, latest)
               type = "unchanged"
-              File.force_link(l, t)
             else
               type = "updated"
-              copy(s, t)
             end
           when "link"
             # the latest backup file is a real file but the
             # current source file is changed to symlink.
             type = "symlink"
-            File.force_symlink(File.readlink(s), t)
-          else
-            return # skip other type of files
           end
         else
-          case File.ftype(s)
+          case File.ftype(src)
           when "file"
             type = "new file"
-            copy(s, t)
           when "link"
             type = "symlink"
-            File.force_symlink(File.readlink(s), t)
-          else
-            return # skip other type of files
           end
         end
       end
-      if Process.uid == 0 and type != "unsupported"
-        if type == "symlink"
-          if File.respond_to? 'lchown'
-            stat = File.lstat(s)
-            File.lchown(stat.uid, stat.gid, t)
-          end
-        else
-          stat = File.stat(s)
-          File.chown(stat.uid, stat.gid, t)
-        end
-      end
+      return type
+    end
 
-      message = sprintf("%-10s %s\n", type, s)
+    def chown_if_root (type, src, today)
+      return unless Process.uid == 0 and type != "unsupported"
+      if type == "symlink"
+        if File.respond_to? 'lchown'
+          stat = File.lstat(src)
+          File.lchown(stat.uid, stat.gid, today)
+        end
+      else
+        stat = File.stat(src)
+        File.chown(stat.uid, stat.gid, today)
+      end
+    end
+
+    def update_file (src, latest, today)
+      type = detect_type(src)
+
+      message = sprintf("%-10s %s\n", type, src)
       @reporter.call(message)
       @interval_proc.call
+      return if @dry_run
+
+      case type
+      when "directory"
+        File.mkpath(today)
+      when "unchanged"
+        File.force_link(latest, today)
+      when "updated"
+        copy(src, today)
+      when "new file"
+        copy(src, today)
+      when "symlink"
+        File.force_symlink(File.readlink(src), today)
+      when "unsupported"
+        # just ignore it
+      else
+        raise "shouldn't be reached here"
+      end
+      chown_if_root(type, src, today)
     end
 
     def restore_dir_attributes (dirs)
@@ -979,16 +996,15 @@ module Pdumpfs
         begin
           update_file(s, l, t)
         rescue Errno::ENOENT => e
-          eprintf("%s", e)
+          wprintf("%s: %s", src, e.message)
           next
-        rescue => e
-          eprintf("%s", e)
         end
 
         if File.ftype(s) == "directory"
           dirs[t] = File.stat(s)
         end
       end
+      return if @dry_run
       restore_dir_attributes(dirs)
     end
 
@@ -1006,6 +1022,8 @@ module Pdumpfs
 
         @reporter.call(s)
         @interval_proc.call
+        next if @dry_run
+
         begin
           case File.ftype(s)
           when "directory"
@@ -1029,16 +1047,15 @@ module Pdumpfs
             end
           end
         rescue Errno::ENOENT => e
-          eprintf("%s", e)
+          wprintf("%s: %s", s, e.message)
           next
-        rescue => e
-          eprintf("%s", e)
         end
 
         if File.ftype(s) == "directory"
           dirs[t] = File.stat(s)
         end
       end
+      return if @dry_run
       restore_dir_attributes(dirs)
     end
 
@@ -1064,6 +1081,7 @@ def usage
   puts "  -l, --log-file=FILE            write a log to FILE"
   puts "  -v, --version                  print version information and exit"
   puts "  -q, --quiet                    suppress all normal output"
+  puts "  -n, --dry-run                  don't actually run any commands"
   puts "  -h, --help                     show this help message"
   exit 0
 end
@@ -1080,7 +1098,7 @@ end
 
 def parse_options
   config = Hash.new
-  patterns  = Array.new
+  patterns = Array.new
   globs = Array.new
   size  = nil
 
@@ -1090,6 +1108,7 @@ def parse_options
                      ['--exclude-by-glob', GetoptLong::REQUIRED_ARGUMENT],
                      ['--log-file', '-l',  GetoptLong::REQUIRED_ARGUMENT],
                      ['--quiet', '-q',     GetoptLong::NO_ARGUMENT],
+                     ['--dry-run', '-n',   GetoptLong::NO_ARGUMENT],
                      ['--help', '-h',      GetoptLong::NO_ARGUMENT],
                      ['--version', '-v',   GetoptLong::NO_ARGUMENT]
                      )
@@ -1111,6 +1130,8 @@ def parse_options
       usage
     when '--quiet'
       be_quiet
+    when '--dry-run'
+      config[:dry_run] = true
     when '--version'
       version
     end
@@ -1137,12 +1158,11 @@ def main
   else
     begin
       src, dest, base, config = parse_options
-      pdumpfs = Pdumpfs::Pdumpfs.new(:matcher  => config[:matcher],
-                                     :log_file => config[:log_file])
+      pdumpfs = Pdumpfs::Pdumpfs.new(config)
       pdumpfs.validate_directories(src, dest)
       pdumpfs.start(src, dest, base)
     rescue => e
-      STDERR.printf("pdumpfs: %s\n", e.message)
+      wprintf("%s", e.message)
       exit(1)
     end
   end

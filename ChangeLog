@@ -1,10 +1,22 @@
 2004-08-10  Satoru Takabayashi  <satoru@namazu.org>
 
+	* pdumpfs.in (parse_options): New option: --dry-run (-n).
+	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.
+	(Pdumpfs::Pdumpfs::update_file): Simplified.
+	(Pdumpfs::Pdumpfs::chown_if_root): New method.
+	(Pdumpfs::Pdumpfs::detect_type): Ditto.
+	(wprintf): Renamed from eprintf.
+	(Pdumpfs::FileMatcher::exclude?): Use wprintf.
+	(main): Ditto.
+	(Pdumpfs::Pdumpfs::update_snapshot): Modify the exception
+	handling. Don't rescue exceptions other than Errno::ENOENT.
+	(Pdumpfs::Pdumpfs::recursive_copy): Ditto.
+
 	* tests/pdumpfs-test: be quiet.
 
 	* pdumpfs.in (parse_options): Fix a bug arised by the yesterday's
 	modification. 
-	(parse_options): New option: --quiet.
+	(parse_options): New option: --quiet (-q).
 	(Pdumpfs::Pdumpfs::initialize): Remove field @verbose.
 
 2004-08-09  Satoru Takabayashi  <satoru@namazu.org>
