@@ -1080,6 +1080,9 @@ def parse_options
     when '--exclude-by-size'
       size = arg
     when '--exclude-by-glob'
+      unless File.respond_to?(:fnmatch)
+        raise sprintf("--exclude-by-glob is not supported on Ruby %s", VERSION)
+      end
       globs.push(arg)
     when '--log-file'
       config[:log_file] = arg
@@ -1109,14 +1112,14 @@ def main
   if has_vruby? and ARGV.empty?
     start_gui
   else
-    src, dest, base, config = parse_options
     begin
+      src, dest, base, config = parse_options
       pdumpfs = Pdumpfs::Pdumpfs.new(:matcher  => config[:matcher],
                                      :log_file => config[:log_file])
       pdumpfs.validate_directories(src, dest)
       pdumpfs.start(src, dest, base)
     rescue => e
-      STDERR.printf("pdumpfs: %s", e.message)
+      STDERR.printf("pdumpfs: %s\n", e.message)
       exit(1)
     end
   end

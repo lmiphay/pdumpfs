@@ -1,3 +1,9 @@
+2004-06-30  Satoru Takabayashi  <satoru@namazu.org>
+
+	* pdumpfs.in (main): Add \n to printf for displaying errors. Fix
+	the bug reported by SASADA Koichi<ko1@atdot.net>. [pdumpfs-new:12]
+	(parse_options): Add a check for the availability of File.fnmatch.
+
 2004-06-22  Satoru Takabayashi  <satoru@namazu.org>
 
 	* doc/pdumpfs-ja.html: Moved from ..
