@@ -1,4 +1,4 @@
-VERSION = 0.99
+VERSION = 1.0
 
 pdumpfs: pdumpfs.in
 	rm -f pdumpfs
@@ -36,7 +36,7 @@ pdumpfs.exe: pdumpfs
 	echo "set_core_by_name	gui" >> pdumpfs.exr
 	exerb pdumpfs.exr
 
-dist-w32: pdumpfs.exe
+dist-w32: clean pdumpfs.exe
 	rm -rf $(w32_pkgname) $(w32_pkgname).zip
 	mkdir -p $(w32_pkgname)
 	cp -p pdumpfs.exe pdumpfs.exe.manifest $(CATALOGS) $(w32_pkgname)

@@ -76,58 +76,8 @@ class File
   end
 end
 
-module Pdumpfs
-  VERSION = @VERSION@
-
-  class NullMatcher
-    def initialize (options = {})
-    end
-
-    def exclude? (path)
-      false
-    end
-  end
-
-  class FileMatcher
-    def initialize (options = {})
-      @patterns = options[:patterns]
-      @globs    = options[:globs]
-      @size     = calc_size(options[:size])
-    end
-
-    def calc_size (size)
-      table   = { "K" => 1, "M" => 2, "G" => 3, "T" => 4, "P" => 5 }
-      pattern = table.keys.join('')
-      case size
-      when nil
-        -1
-      when /^(\d+)([#{pattern}]?)$/i
-        num  = Regexp.last_match[1].to_i
-        unit = Regexp.last_match[2]
-        num * 1024 ** (table[unit] or 0)
-      else
-        raise "Invalid size: #{size}"
-      end
-    end
-
-    def exclude? (path)
-      begin
-        stat = File.lstat(path)
-
-        if @size >= 0 and stat.file? and stat.size >= @size
-          return true
-        elsif @patterns.find {|pattern| pattern.match(path) }
-          return true
-        elsif stat.file? and
-            @globs.find {|glob| File.fnmatch(glob, File.basename(path)) }
-          return true
-        end
-      rescue Errno::ENOENT => error
-        STDERR.puts error.message
-      end
-      return false
-    end
-  end
+def eprintf (format, *args)
+  STDERR.printf("pdumpfs: " + format + "\n", *args)
 end
 
 def windows?
@@ -169,6 +119,10 @@ if windows?
     get_volume_information.call(drive, nil, 0, nil, nil, nil, buff, 1024)
 
     buff.sub(/\000+/, '')
+  end
+
+  def ntfs? (dir)
+    get_filesystem_type(dir) == "NTFS"
   end
 
   def get_file_time (time)
@@ -216,7 +170,6 @@ if windows?
     return 0
   end
 end
-
 
 $w32_libraries_loaded = false
 begin
@@ -273,7 +226,7 @@ if has_vruby?
     end
   end
 
-  class TimerDialog < VRModalDialog
+  class TaskSchedulerDialog < VRModalDialog
     include VRGridLayoutManager
     include GetText
 
@@ -281,7 +234,7 @@ if has_vruby?
     GridHeight = 7
     GridUnit   = 8
     def construct
-      self.caption = _("Set timer")
+      self.caption = _("Add to task scheduler")
       setDimension(GridWidth, GridHeight)
       s = WStyle::WS_TABSTOP
       
@@ -289,19 +242,15 @@ if has_vruby?
       addControl(VRStatic,   "min_label",     _("Minute"), 9, 1, 7,  2)
       addControl(VRCombobox, "hour_combobox", "",          1, 3, 7, 40, s)
       addControl(VRCombobox, "min_combobox",  "",          9, 3, 7, 40, s)
-      addControl(VRButton,   "set_button",    _("Set"),   17, 3, 6,  3, s)
+      addControl(VRButton,   "set_button",    _("Add"),   17, 3, 6,  3, s)
       delta_x, delta_y = get_delta_xy
       self.move(200, 200, 
                 GridWidth * GridUnit  + delta_x, 
                 GridHeight * GridUnit + delta_y)
       24.times {|i| @hour_combobox.addString(sprintf("%02d", i)) }
       60.times {|i| @min_combobox.addString(sprintf("%02d", i)) }
-      hour = 0
-      min  = 0
-      if @parent.backup_time
-        hour = hour(@parent.backup_time)
-        min  = min(@parent.backup_time)
-      end
+      hour = Time.now.hour
+      min  = Time.now.min
       @hour_combobox.select(hour)
       @min_combobox.select(min)
     end
@@ -310,14 +259,6 @@ if has_vruby?
       hour = @hour_combobox.selectedString.to_i
       min  = @min_combobox.selectedString.to_i
       close([hour, min])
-    end
-  end
-
-  class TaskSchedulerDialog < TimerDialog
-    def construct
-      super
-      self.caption = _("Add to task scheduler")
-      @set_button.caption = _("Add")
     end
   end
 
@@ -357,9 +298,9 @@ if has_vruby?
     SW_HIDE                = 0
     SW_SHOWNORMAL          = 1
 
-    ShellExecute  = Win32API.new("shell32", "ShellExecute", "LPPPPL", 'L')
+    ShellExecute  = Win32API.new("shell32",  "ShellExecute", "LPPPPL", 'L')
     GetLocaleInfo = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
-    LoadIcon      = Win32API.new("user32", "LoadIcon", "II", "I")
+    LoadIcon      = Win32API.new("user32",   "LoadIcon", "II", "I")
 
     def get_locale_name
       locale_name = " " * 32
@@ -422,15 +363,13 @@ if has_vruby?
       setMenu(newMenu.set([ [_("&File"),
                               [ [_("Choose &From directory"), "from_menu"],
                                 [_("Choose &To directory"), "to_menu"],
-                                [_("&Save script as..."), "save_menu"],
                                 VRMenu::SEPARATOR,
                                 [_("&View the log"), "view_log_menu"],
                                 [_("Clear log"), "clear_log_menu"],
                                 [_("Clear history"), "clear_history_menu"],
                                 VRMenu::SEPARATOR,
-                                [_("Set timer"), "set_timer_menu"],
-                                [_("Unset timer"), "unset_timer_menu"],
-                                [_("Add to task scheduler"), "task_scheduler_menu"],
+                                [_("Add to task scheduler"), "add_to_task_scheduler_menu"],
+                                [_("Open task scheduler"), "open_task_scheduler_menu"],
                                 VRMenu::SEPARATOR,
                                 [_("Get &into Tasktray"), "tasktray_menu"],
                                 [_("E&xit"), "exit_menu"]
@@ -450,86 +389,41 @@ if has_vruby?
       ]
     end
 
-    def escape (path)
-      '\\"' + path.gsub(/(\\)/, '\1\1') + '\\"'
+    def open_task_scheduler_menu_clicked
+      task_clsid =
+        "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}\\::{D6277990-4C6A-11CF-8D87-00AA0060F5BF}"
+      ShellExecute.call(0, "open", "explorer.exe", task_clsid, 0, SW_SHOWNORMAL);
     end
 
-
-    def save_script (filename)
-      File.open(filename, "w") {|f|
-        f.puts('var WShell = WScript.CreateObject("WScript.Shell");')
-        f.printf("WShell.Run(\"%s %s %s\");\n",
-                 escape(program_name),
-                 escape(@from_combobox.text), 
-                 escape(@to_combobox.text))
-      }
-    end
-
-    def task_scheduler_menu_clicked
-      value = VRLocalScreen.modalform(self, nil, TaskSchedulerDialog)
-      return unless value
-      hour = value.first
-      min  = value.last
-      command_line = sprintf('"%s" "%s" "%s"', 
-                             program_name,
-                             @from_combobox.text,
-                             @to_combobox.text)
-      at_args = sprintf("%d:%d /interactive /every:m,t,w,th,f,s,su %s", 
-                        hour, min, command_line)
-      ShellExecute.call(0, "open", "at", at_args, 0, SW_HIDE)
-      @statusbar.setTextOf(0, _("A new task is added to the task scheduler."))
-    end
-
-    OFN_OVERWRITEPROMPT = 2
-    def save_menu_clicked
-      filename = SWin::CommonDialog::saveFilename(self, 
-                                                  [["js(*.js)", "*.js"]],
-                                                  OFN_OVERWRITEPROMPT,
-                                                  _("Save script as..."),
-                                                  "js")
-      if filename
-        save_script(filename)
+    def add_to_task_scheduler_menu_clicked
+      begin
+        validate_all
+        value = VRLocalScreen.modalform(self, nil, TaskSchedulerDialog)
+        return unless value
+        hour = value.first
+        min  = value.last
+        command_line = sprintf('"%s" -l "%s" "%s" "%s"', 
+                               program_name,
+                               @log_file,
+                               @from_combobox.text,
+                               @to_combobox.text)
+        at_args = sprintf("%d:%d /every:m,t,w,th,f,s,su %s", 
+                          hour, min, command_line)
+        retval = ShellExecute.call(0, "open", "at", at_args, 0, SW_HIDE)
+        if retval > 32
+          update_statusbar(_("A new task is added to the task scheduler."))
+        else
+          show_error(_("Failed to add a new task."))
+        end
+      rescue PdumpfsFormError
+      rescue Exception => e
+        show_error(e.message)
       end
     end
 
-    def set_timer_menu_clicked
-      value = VRLocalScreen.modalform(self, nil, TimerDialog)
-      return unless value
-      hour = value.first
-      min  = value.last
-      @backup_time = hour * 3600 + min * 60
-      restart_timer_thread
-      update_statusbar
-      update_menu
-    end
-
-    def unset_timer_menu_clicked
-      @backup_time = nil
-      terminate_timer_thread
-      @statusbar.setTextOf(0, "")
-      update_menu
-    end
-
-    def calc_interval
-      raise "Timer is not set" if @backup_time.nil?
-      t = Time.now
-      now = t.hour * 3600 + t.min * 60 + t.sec
-      interval = @backup_time - now;
-      interval += 86400 if interval < 0
-      return interval
-    end
-
-    def update_statusbar
-      if @backup_time
-        interval = calc_interval
-
-        message = sprintf(_("The next backup starts at %02d:%02d") +
-                          _(" (in %02d:%02d:%02d)"),
-                          hour(@backup_time), min(@backup_time),
-                          hour(interval), min(interval), sec(interval))
-        @statusbar.setTextOf(0, message)
-      end
-    end
+    def show_error (message)
+      messageBox(message, _("Error"), 0)
+    end      
 
     def self_trayrbuttonup (iconid)
       showPopup(@traymenu)
@@ -543,10 +437,9 @@ if has_vruby?
 
     def construct
       @in_tasktray = false
-      @log_filename = File.join(File.dirname(program_name), "pdumpfs.log")
-      @config_filename = File.join(File.dirname(program_name), "pdumpfs.txt")
+      @log_file = File.join(File.dirname(program_name), "pdumpfs.log")
+      @config_file = File.join(File.dirname(program_name), "pdumpfs.txt")
       @last_path = ""
-      @backup_time = nil
 
       init_catalog
       add_controls
@@ -562,43 +455,7 @@ if has_vruby?
                 GridHeight * GridUnit + delta_y)
 
       @mutex = Mutex.new
-      start_statusbar_thread
-      @timer_thread = start_timer_thread
       @critical_thread = nil
-    end
-    attr_reader :backup_time
-
-    def start_statusbar_thread
-      t = Thread.new {
-        loop {
-          @mutex.synchronize { update_statusbar }
-          sleep(1)
-        }
-      }
-      t.abort_on_exception = true
-    end
-
-    def start_timer_thread
-      return Thread.new {} unless @backup_time
-
-      t = Thread.new {
-        loop {
-          interval = calc_interval
-          sleep(interval)
-          do_backup
-        }
-      }
-      t.abort_on_exception = true
-      return t
-    end
-
-    def terminate_timer_thread
-      @timer_thread.terminate
-    end
-
-    def restart_timer_thread
-      terminate_timer_thread
-      @timer_thread = start_timer_thread
     end
 
     def open_file (filename)
@@ -606,17 +463,16 @@ if has_vruby?
     end
 
     def save_config
-      File.open(@config_filename, "w") {|f|
+      File.open(@config_file, "w") {|f|
         @from_combobox.eachString {|x| f.printf("from:%s\n", x) unless x.empty?}
         @to_combobox.eachString {|x| f.printf("to:%s\n", x) unless x.empty? }
-        f.printf("backup_time:%d\n", @backup_time) if @backup_time
         f.printf("tasktray:true\n") if @in_tasktray
       }
     end
 
     def load_config
-      return unless File.readable_file?(@config_filename)
-      File.open(@config_filename, "r") {|f|
+      return unless File.readable_file?(@config_file)
+      File.open(@config_file, "r") {|f|
         f.readlines.reverse.each {|line|
           m = /^(.*?):(.*)$/.match(line)
           next if m.nil?
@@ -627,8 +483,6 @@ if has_vruby?
             add_history(@from_combobox, value)
           when "to"
             add_history(@to_combobox, value)
-          when "backup_time"
-            @backup_time = value.to_i
           when "tasktray"
             @in_tasktray = true
           else
@@ -651,9 +505,15 @@ if has_vruby?
       exit
     end
 
+    def update_statusbar (message)
+      @statusbar.setTextOf(0, message)
+    end
+      
     def self_close
       if @critical_thread and @critical_thread.alive?
-        @critical_thread.terminate
+        update_statusbar(_("Backup process is interrupted"))
+        @critical_thread.kill
+        raise "should not be reached here"
       else
         quit_graceful
       end
@@ -664,11 +524,11 @@ if has_vruby?
     end
 
     def view_log_menu_clicked
-      open_file(@log_filename)
+      open_file(@log_file)
     end
 
     def clear_log_menu_clicked
-      File.unlink(@log_filename)
+      File.unlink(@log_file)
       update_menu
     end
 
@@ -681,14 +541,13 @@ if has_vruby?
     end
 
     def log_file_exist?
-      File.exist?(@log_filename)
+      File.exist?(@log_file)
     end
 
     def update_menu
       update_menuitem(@clear_history_menu, histories_not_empty?)
       update_menuitem(@clear_log_menu,     log_file_exist?)
       update_menuitem(@view_log_menu,      log_file_exist?)
-      update_menuitem(@unset_timer_menu,   @backup_time)
     end
 
     def clear_history
@@ -732,12 +591,11 @@ if has_vruby?
       combobox.clearStrings if combobox_empty?(combobox)
       
       index = combobox_find(combobox, dirname)
-      if index == -1
-        combobox.addString(0, dirname)
-        combobox.select(0)
-      else
-        combobox.select(index)
+      if index != -1
+        combobox.deleteString(index)
       end
+      combobox.addString(0, dirname)
+      combobox.select(0)
     end
 
     def select_directory (combobox, name)
@@ -778,23 +636,23 @@ if has_vruby?
     alias :from_menu_clicked :from_button_clicked
     alias :to_menu_clicked   :to_button_clicked
 
+    class PdumpfsFormError < Exception; end
     def validate_directory (dir, name)
       if dir.nil? or dir.empty?
         messageBox(sprintf(_("Please select %s directory"), name),
                    _("warning"), 0)
-        raise
+        raise PdumpfsFormError.new
       elsif !File.directory?(dir)
         messageBox(sprintf(_("%s directory does not exist"), name),
                    _("warning"), 0)
-        raise
+        raise PdumpfsFormError.new
       end
     end
 
     def validate_filesystem (dir)
-      fstype = get_filesystem_type(dir)
-      unless fstype == "NTFS"
+      unless ntfs?(dir)
         messageBox(sprintf(_("%s is not an NTFS"), dir), _("warning"), 0)
-        raise
+        raise PdumpfsFormError.new
       end
     end
 
@@ -828,9 +686,9 @@ if has_vruby?
       }
     end
 
-    # We don't use validate_directories to display message
+    # We don't use Pdumpfs#validate_directories to display message
     # boxes for errors.
-    def validate_all (src, dest)
+    def validate_all (src = @from_combobox.text, dest = @to_combobox.text)
       validate_directory(src,  _("From"))
       validate_directory(dest, _("To"))
       validate_filesystem(dest)
@@ -844,29 +702,23 @@ if has_vruby?
           add_history(@from_combobox, src)
           add_history(@to_combobox, dest)
 
-          reporter = lambda {|status|
-            @statusbar.setTextOf(0, status)
-            application.doevents
-          }
+          # We explicitly call doevents manually instead of
+          # entrusting threads for performance reason.
+          interval_proc = lambda { application.doevents }
+          reporter = lambda {|status| update_statusbar(status) }
 
-          begin
-            start_backup(src, dest, nil, Pdumpfs::NullMatcher.new, reporter)
-          rescue => e
-            messageBox(e.message, _("Fatal error"), 0)
-          end
-
-          add_log_entry(src, dest)
+          pdumpfs = Pdumpfs::Pdumpfs.new(:reporter => reporter,
+                                         :log_file => @log_file,
+                                         :verbose  => true,
+                                         :interval_proc => interval_proc
+                                         )
+          pdumpfs.start(src, dest)
           update_menu
-          @statusbar.setTextOf(0, _("Finished!"))
-        rescue
+          update_statusbar(_("Backup is finished!"))
+        rescue PdumpfsFormError
+        rescue Exception => e
+          show_error(e.message)
         end
-      }
-    end
-
-    def add_log_entry (src, dest)
-      File.open(@log_filename, "a") {|f|
-        time =  Time.now.strftime("%Y-%m-%dT%H:%M:%S")
-        f.printf("%s: %s -> %s\n", time, src, dest)
       }
     end
 
@@ -883,12 +735,320 @@ if has_vruby?
   end
 end
 
+module Pdumpfs
+  VERSION = @VERSION@
+
+  class NullMatcher
+    def initialize (options = {})
+    end
+
+    def exclude? (path)
+      false
+    end
+  end
+
+  class FileMatcher
+    def initialize (options = {})
+      @patterns = options[:patterns]
+      @globs    = options[:globs]
+      @size     = calc_size(options[:size])
+    end
+
+    def calc_size (size)
+      table   = { "K" => 1, "M" => 2, "G" => 3, "T" => 4, "P" => 5 }
+      pattern = table.keys.join('')
+      case size
+      when nil
+        -1
+      when /^(\d+)([#{pattern}]?)$/i
+        num  = Regexp.last_match[1].to_i
+        unit = Regexp.last_match[2]
+        num * 1024 ** (table[unit] or 0)
+      else
+        raise "Invalid size: #{size}"
+      end
+    end
+
+    def exclude? (path)
+      begin
+        stat = File.lstat(path)
+
+        if @size >= 0 and stat.file? and stat.size >= @size
+          return true
+        elsif @patterns.find {|pattern| pattern.match(path) }
+          return true
+        elsif stat.file? and
+            @globs.find {|glob| File.fnmatch(glob, File.basename(path)) }
+          return true
+        end
+      rescue Errno::ENOENT => e
+        STDERR.puts e.message
+      end
+      return false
+    end
+  end
+
+  class Pdumpfs
+    def initialize (config = {})
+      @matcher  = (config[:matcher]  or NullMatcher.new)
+      @reporter = (config[:reporter] or lambda {|x| puts x })
+      @verbose  = (config[:verbose]  or false)
+      @log_file = (config[:log_file] or nil)
+      @interval_proc = (config[:interval_proc] or lambda {})
+      @written_bytes = 0
+    end
+
+    def start (src, dest, base = nil)
+      start_time = Time.now
+
+      base = File.basename(src) unless base
+      if windows?
+        src  = expand_special_folders(src)
+        dest = expand_special_folders(dest)
+      end
+
+      latest = latest_snapshot(src, dest, base)
+      today  = File.join(dest, datedir(Date.today), base)
+
+      File.umask(0077)
+      File.mkpath(today)
+      if latest
+        update_snapshot(src, latest, today)
+      else
+        recursive_copy(src, today)
+      end
+
+      elapsed = Time.now - start_time
+      add_log_entry(src, today, elapsed)
+    end
+
+    def convert_bytes (bytes)
+      if bytes < 1024
+        sprintf("%dB", bytes)
+      elsif bytes < 1024 * 1000 # 1000kb
+        sprintf("%.1fKB", bytes.to_f / 1024)
+      elsif bytes < 1024 * 1024 * 1000  # 1000mb
+        sprintf("%.1fMB", bytes.to_f / 1024 / 1024)
+      else
+        sprintf("%.1fGB", bytes.to_f / 1024 / 1024 / 1024)
+      end
+    end
+
+    def add_log_entry (src, today, elapsed)
+      return unless @log_file
+      File.open(@log_file, "a") {|f|
+        time  = Time.now.strftime("%Y-%m-%dT%H:%M:%S")
+        bytes = convert_bytes(@written_bytes)
+        f.printf("%s: %s -> %s (in %.2f sec, %s written)\n", 
+                 time, src, today, elapsed, bytes)
+      }
+    end
+
+    def same_file? (f1, f2)
+      File.real_file?(f1) and File.real_file?(f2) and
+        File.size(f1) == File.size(f2) and File.mtime(f1) == File.mtime(f2)
+    end
+
+    def datedir (date)
+      sprintf "%d/%02d/%02d", date.year, date.month, date.day
+    end
+
+    def latest_snapshot (src, dest, base)
+      for i in 1 .. 31  # allow at most 31 days absence
+        x = File.join(dest, datedir(Date.today - i), base)
+        return x if File.directory?(x)
+      end
+      nil
+    end
+
+    # We don't use File.copy for calling @interval_proc.
+    def copy_file (src, dest)
+      File.open(src, 'rb') {|r|
+        File.open(dest, 'wb') {|w|
+          block_size = (r.stat.blksize or 8192)
+          begin
+            i = 0
+            while true
+              block = r.sysread(block_size)
+              w.syswrite(block)
+              i += 1
+              @written_bytes += block.size
+              @interval_proc.call if i % 10 == 0
+            end
+          rescue EOFError
+          end
+        }
+      }
+    end
+
+    # incomplete substitute for cp -p
+    def copy (src, dest)
+      stat = File.stat(src)
+      copy_file(src, dest)
+      File.chmod(0200, dest) if windows?
+      File.utime(stat.atime, stat.mtime, dest)
+      File.chmod(stat.mode, dest) # not necessary. just to make sure
+    end
+
+    def update_file (s, l, t)
+      type = "unsupported"
+      if File.real_directory?(s)
+        type = "directory"
+        File.mkpath(t)
+      else
+        if File.real_file?(l)
+          case File.ftype(s)
+          when "file"
+            if same_file?(s, l)
+              type = "unchanged"
+              File.force_link(l, t)
+            else
+              type = "updated"
+              copy(s, t)
+            end
+          when "link"
+            # the latest backup file is a real file but the
+            # current source file is changed to symlink.
+            type = "symlink"
+            File.force_symlink(File.readlink(s), t)
+          else
+            return # skip other type of files
+          end
+        else
+          case File.ftype(s)
+          when "file"
+            type = "new file"
+            copy(s, t)
+          when "link"
+            type = "symlink"
+            File.force_symlink(File.readlink(s), t)
+          else
+            return # skip other type of files
+          end
+        end
+      end
+      if Process.uid == 0 and type != "unsupported"
+        if type == "symlink"
+          if File.respond_to? 'lchown'
+            stat = File.lstat(s)
+            File.lchown(stat.uid, stat.gid, t)
+          end
+        else
+          stat = File.stat(s)
+          File.chown(stat.uid, stat.gid, t)
+        end
+      end
+
+      message = sprintf("%-10s %s\n", type, s)
+      @reporter.call(message)
+      @interval_proc.call
+    end
+
+    def restore_dir_attributes (dirs)
+      dirs.each {|dir, stat|
+        File.utime(stat.atime, stat.mtime, dir)
+        File.chmod(stat.mode, dir)
+      }
+    end
+
+    def update_snapshot (src, latest, today)
+      dirs = {};
+
+      Find.find(src) do |s|      # path of the source file
+        if @matcher.exclude?(s)
+          if File.lstat(s).directory? then Find.prune() else next end
+        end
+
+        r = s.sub(%r[^#{Regexp.quote src}/?], "")  # relative path 
+        l = File.join(latest, r)  # path of the latest  snapshot
+        t = File.join(today, r)   # path of the today's snapshot
+
+        begin
+          update_file(s, l, t)
+        rescue Errno::ENOENT => e
+          eprintf("%s", e)
+          next
+        rescue => e
+          eprintf("%s", e)
+        end
+
+        if File.ftype(s) == "directory"
+          dirs[t] = File.stat(s)
+        end
+      end
+      restore_dir_attributes(dirs)
+    end
+
+    # incomplete substitute for cp -rp
+    def recursive_copy (src, dest)
+      dirs = {};
+
+      Find.find(src) do |s|
+        if @matcher.exclude?(s)
+          if File.lstat(s).directory? then Find.prune() else next end
+        end
+
+        r = s.sub(%r[^#{Regexp.quote(src)}/?], "")
+        t = File.join(dest, r)
+
+        @reporter.call(s) if @verbose
+        @interval_proc.call
+        begin
+          case File.ftype(s)
+          when "directory"
+            File.mkpath(t)
+          when "file"
+            copy(s, t)
+          when "link"
+            File.force_symlink(File.readlink(s), t)
+          else
+            next # skip other kind of files
+          end
+          if Process.uid == 0
+            if File.ftype(s) == "link"
+              if File.respond_to? 'lchown'
+                stat = File.lstat(s)
+                File.lchown(stat.uid, stat.gid, t)
+              end
+            else
+              stat = File.stat(s)
+              File.chown(stat.uid, stat.gid, t)
+            end
+          end
+        rescue Errno::ENOENT => e
+          eprintf("%s", e)
+          next
+        rescue => e
+          eprintf("%s", e)
+        end
+
+        if File.ftype(s) == "directory"
+          dirs[t] = File.stat(s)
+        end
+      end
+      restore_dir_attributes(dirs)
+    end
+
+    def validate_directories (src, dest)
+      raise "No such directory: #{src}"  unless File.directory?(src)
+      raise "No such directory: #{dest}" unless File.directory?(dest)
+
+      if windows?
+        unless ntfs?(dest)
+          raise sprintf("only NTFS is supported but %s is %s.", dest, fstype)
+        end
+      end
+    end
+  end
+end
+
 def usage
   puts "Usage: pdumpfs <source directory> <destination directory>"+
        " [destination basename]"
   puts "  -e, --exclude=PATTERN          exclude files/directories matching PATTERN"
   puts "  -s, --exclude-by-size=SIZE     exclude files larger than SIZE"
   puts "  -w, --exclude-by-glob=GLOB     exclude files matching GLOB"
+  puts "  -l, --log-file=FILE            write a log to FILE"
   puts "  -v, --version                  print version information and exit"
   puts "  -h, --help                     show this help message"
   exit 0
@@ -899,12 +1059,8 @@ def version
   exit 0
 end
 
-def same_file? (f1, f2)
-  File.real_file?(f1) and File.real_file?(f2) and
-    File.size(f1) == File.size(f2) and File.mtime(f1) == File.mtime(f2)
-end
-
 def parse_options
+  config = Hash.new
   patterns  = Array.new
   globs = Array.new
   size  = nil
@@ -913,6 +1069,7 @@ def parse_options
   parser.set_options(['--exclude',  '-e',  GetoptLong::REQUIRED_ARGUMENT],
                      ['--exclude-by-size', GetoptLong::REQUIRED_ARGUMENT],
                      ['--exclude-by-glob', GetoptLong::REQUIRED_ARGUMENT],
+                     ['--log-file', '-l',  GetoptLong::REQUIRED_ARGUMENT],
                      ['--help', '-h',      GetoptLong::NO_ARGUMENT],
                      ['--version', '-v',   GetoptLong::NO_ARGUMENT]
                      )
@@ -924,6 +1081,8 @@ def parse_options
       size = arg
     when '--exclude-by-glob'
       globs.push(arg)
+    when '--log-file'
+      config[:log_file] = arg
     when '--help'
       usage
     when '--version'
@@ -931,14 +1090,11 @@ def parse_options
     end
   end
 
-  matcher = if size.nil? and globs.empty? and patterns.empty?
-              Pdumpfs::NullMatcher.new
-            else
-              Pdumpfs::FileMatcher.new(:size     => size,
-                                       :globs    => globs,
-                                       :patterns => patterns)
-            end
-
+  config[:matcher] = unless size.nil? and globs.empty? and patterns.empty?
+                       Pdumpfs::FileMatcher.new(:size     => size,
+                                                :globs    => globs,
+                                                :patterns => patterns)
+                     end
   usage if ARGV.length < 2
 
   # strip the trailing / to avoid basename(src) == ''.
@@ -946,215 +1102,19 @@ def parse_options
   dest = ARGV[1]
   base = ARGV[2]
 
-  return src, dest, base, matcher
-end
-
-def datedir (date)
-  sprintf "%d/%02d/%02d", date.year, date.month, date.day
-end
-
-def latest_snapshot (src, dest, base)
-  for i in 1 .. 31  # allow at most 31 days absence
-    x = File.join(dest, datedir(Date.today - i), base)
-    return x if File.directory?(x)
-  end
-  nil
-end
-
-# incomplete substitute for cp -p
-def copy (src, dest)
-  stat = File.stat(src)
-  File.copy(src, dest)
-  File.chmod(0200, dest) if windows?
-  File.utime(stat.atime, stat.mtime, dest)
-  File.chmod(stat.mode, dest) # not necessary. just to make sure
-end
-
-def update_file (s, l, t, reporter)
-  type = "unsupported"
-  if File.real_directory?(s)
-    type = "directory"
-    File.mkpath(t)
-  else
-    if File.real_file?(l)
-      case File.ftype(s)
-      when "file"
-        if same_file?(s, l)
-          type = "unchanged"
-          File.force_link(l, t)
-        else
-          type = "updated"
-          copy(s, t)
-        end
-      when "link"
-        # the latest backup file is a real file but the
-        # current source file is changed to symlink.
-        type = "symlink"
-        File.force_symlink(File.readlink(s), t)
-      else
-        return # skip other type of files
-      end
-    else
-      case File.ftype(s)
-      when "file"
-        type = "new file"
-        copy(s, t)
-      when "link"
-        type = "symlink"
-        File.force_symlink(File.readlink(s), t)
-      else
-        return # skip other type of files
-      end
-    end
-  end
-  if Process.uid == 0 and type != "unsupported"
-    if type == "symlink"
-      if File.respond_to? 'lchown'
-        stat = File.lstat(s)
-        File.lchown(stat.uid, stat.gid, t)
-      end
-    else
-      stat = File.stat(s)
-      File.chown(stat.uid, stat.gid, t)
-    end
-  end
-
-  message = sprintf("%-10s %s\n", type, s)
-  if reporter
-    reporter.call(message)
-  else
-    puts message
-  end
-end
-
-def restore_dir_attributes (dirs)
-  dirs.each {|dir, stat|
-    File.utime(stat.atime, stat.mtime, dir)
-    File.chmod(stat.mode, dir)
-  }
-end
-
-def eprintf (format, *args)
-  STDERR.printf("pdumpfs: " + format + "\n", *args)
-end
-
-def update_snapshot (src, latest, today, matcher, reporter)
-  dirs = {};
-
-  Find.find(src) do |s|      # path of the source file
-    if matcher.exclude?(s)
-      if File.lstat(s).directory? then Find.prune() else next end
-    end
-
-    r = s.sub %r[^#{Regexp.quote src}/?], ""  # relative path
-    l = File.join(latest, r)  # path of the latest  snapshot
-    t = File.join(today, r)   # path of the today's snapshot
-
-    begin
-      update_file(s, l, t, reporter)
-    rescue Errno::ENOENT => e
-      eprintf("%s", e)
-      next
-    rescue => e
-      eprintf("%s", e)
-    end
-
-    if File.ftype(s) == "directory"
-      dirs[t] = File.stat(s)
-    end
-  end
-
-  restore_dir_attributes(dirs)
-end
-
-# incomplete substitute for cp -rp
-def recursive_copy (src, dest, matcher, reporter = nil)
-  dirs = {};
-
-  Find.find(src) do |s|
-    if matcher.exclude?(s)
-      if File.lstat(s).directory? then Find.prune() else next end
-    end
-
-    r = s.sub(%r[^#{Regexp.quote(src)}/?], "")
-    t = File.join(dest, r)
-
-    reporter.call(s) if reporter
-    begin
-      case File.ftype(s)
-      when "directory"
-        File.mkpath(t)
-      when "file"
-        copy(s, t)
-      when "link"
-        File.force_symlink(File.readlink(s), t)
-      else
-        next # skip other kind of files
-      end
-      if Process.uid == 0
-        if File.ftype(s) == "link"
-          if File.respond_to? 'lchown'
-            stat = File.lstat(s)
-            File.lchown(stat.uid, stat.gid, t)
-          end
-        else
-          stat = File.stat(s)
-          File.chown(stat.uid, stat.gid, t)
-        end
-      end
-    rescue Errno::ENOENT => e
-      eprintf("%s", e)
-      next
-    rescue => e
-      eprintf("%s", e)
-    end
-
-    if File.ftype(s) == "directory"
-      dirs[t] = File.stat(s)
-    end
-  end
-  restore_dir_attributes(dirs)
-end
-
-def validate_directories (src, dest)
-  raise "No such directory: #{src}"  unless File.directory?(src)
-  raise "No such directory: #{dest}" unless File.directory?(dest)
-
-  if windows?
-    fstype = get_filesystem_type(dest)
-    unless fstype == "NTFS"
-      raise sprintf("only NTFS is supported but %s is %s.", dest, fstype)
-    end
-  end
-end
-
-def start_backup (src, dest, base, matcher, reporter = nil)
-  if windows?
-    src  = expand_special_folders(src)
-    dest = expand_special_folders(dest)
-  end
-
-  latest = latest_snapshot(src, dest, base)
-  today  = File.join(dest, datedir(Date.today), base)
-
-  File.umask(0077)
-  File.mkpath(today)
-  if latest
-    update_snapshot(src, latest, today, matcher, reporter)
-  else
-    recursive_copy(src, today, matcher, reporter)
-  end
+  return src, dest, base, config
 end
 
 def main
   if has_vruby? and ARGV.empty?
     start_gui
   else
-    src, dest, base, matcher = parse_options
-    base = File.basename(src) unless base
+    src, dest, base, config = parse_options
     begin
-      validate_directories(src, dest)
-      start_backup(src, dest, base, matcher)
+      pdumpfs = Pdumpfs::Pdumpfs.new(:matcher  => config[:matcher],
+                                     :log_file => config[:log_file])
+      pdumpfs.validate_directories(src, dest)
+      pdumpfs.start(src, dest, base)
     rescue => e
       STDERR.printf("pdumpfs: %s", e.message)
       exit(1)
