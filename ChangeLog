@@ -1,3 +1,8 @@
+2004-10-28  Satoru Takabayashi  <satoru@namazu.org>
+
+	* doc/pdumpfs-ja.html: Update documentation.
+	* doc/pdumpfs.html: Ditto.
+
 2004-10-01  Satoru Takabayashi  <satoru@namazu.org>
 
 	* catalog-validator.rb (CatalogValidator): Renamed from
