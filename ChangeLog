@@ -6,6 +6,12 @@
 	(Pdumpfs::Pdumpfs::recursive_copy): Simplified using detect_type.
 	(File::safe_readlink): New function.
 	(File::anything_exist?): New function.
+	(Pdumpfs::Pdumpfs::valid_date?): New method.
+	(Pdumpfs::Pdumpfs::past?): New method.
+	(Pdumpfs::Pdumpfs::datedir): Use File::SEPARATOR.
+	(File::expand_special_folders): Ditto.
+	(File::PdumpfsForm::get_exe_file_name): Ditto.
+	(File::PdumpfsForm::get_program_file_name): Ditto.
 
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.

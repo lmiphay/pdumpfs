@@ -902,10 +902,7 @@ module Pdumpfs
 
     def past_date? (year, month, day)
       t = Time.now
-      [year, month, day].zip([t.year, t.month, t.day]).each {|x, y|
-        return true if x < y
-      }
-      return false
+      return ([year, month, day] <=> [t.year, t.month, t.day]) == -1
     end
 
     def latest_snapshot (src, dest, base)
