@@ -1116,11 +1116,11 @@ def parse_options
                      end
   usage if ARGV.length < 2
 
-  # strip the trailing / to avoid basename(src) == ''.
-  src  = ARGV[0].sub(%r!/+$!, "") unless ARGV[0] == '/' #'
+  src  = ARGV[0]
   dest = ARGV[1]
   base = ARGV[2]
-
+  # strip the trailing / to avoid basename(src) == ''.
+  src  = src.sub(%r!/+$!, "") unless src == '/' #'
   return src, dest, base, config
 end
 
