@@ -48,7 +48,6 @@
 #
 
 require 'find'
-require 'date'
 require 'ftools'
 require 'getoptlong'
 
@@ -842,8 +841,8 @@ module Pdumpfs
         dest = expand_special_folders(dest)
       end
 
-      latest = latest_snapshot(src, dest, base)
-      today  = File.join(dest, datedir(Date.today), base)
+      latest = latest_snapshot(start_time, src, dest, base)
+      today  = File.join(dest, datedir(start_time), base)
 
       File.umask(0077)
       File.mkpath(today) unless @dry_run
@@ -900,12 +899,11 @@ module Pdumpfs
       end
     end
 
-    def past_date? (year, month, day)
-      t = Time.now
-      return ([year, month, day] <=> [t.year, t.month, t.day]) < 0
+    def past_date? (year, month, day, t)
+      ([year, month, day] <=> [t.year, t.month, t.day]) < 0
     end
 
-    def latest_snapshot (src, dest, base)
+    def latest_snapshot (start_time, src, dest, base)
       # FIXME: Y10K problem.
       glob_path = File.join(dest, 
                             "[0-9][0-9][0-9][0-9]",
@@ -915,7 +913,7 @@ module Pdumpfs
         day, month, year = dir.split(File::SEPARATOR).reverse.map {|x| x.to_i }
         path = File.join(dir, base)
         if File.directory?(path) and valid_date?(year, month, day) and
-            past_date?(year, month, day)
+            past_date?(year, month, day, start_time)
           return path
         end
       }
