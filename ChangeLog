@@ -2,6 +2,8 @@
 
  	* pdumpfs: Version 1.0 released.
 
+	* Makefile (dist): Don't include  pdumpfs.exe.manifest.
+
 	* Makefile (VERSION): Bumped version number to 1.0.
 
 2004-05-22  Satoru Takabayashi  <satoru@namazu.org>

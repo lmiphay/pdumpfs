@@ -16,7 +16,7 @@ clean:
 dist: clean
 	rm -rf pdumpfs-$(VERSION)
 	mkdir pdumpfs-$(VERSION)
-	cp -p   README COPYING ChangeLog Makefile pdumpfs.exe.manifest\
+	cp -p   README COPYING ChangeLog Makefile\
 		pdumpfs.in pdumpfs*.html pdumpfs-$(VERSION)
 	cp -rp tests man pdumpfs-$(VERSION)
 	find pdumpfs-$(VERSION) -name CVS -or -name '*~' | xargs rm -rf
