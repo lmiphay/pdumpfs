@@ -76,8 +76,11 @@ class File
   end
 
   def self.force_symlink (src, dest)
-    File.unlink(dest) if File.anything_exist?(dest)
-    File.symlink(src, dest)
+    begin
+      File.unlink(dest) if File.anything_exist?(dest)
+      File.symlink(src, dest)
+    rescue NotImplementedError # for Windows
+    end
   end
 
   def self.force_link (src, dest)
@@ -827,7 +830,6 @@ module Pdumpfs
     end
 
     def create_latest_symlink (dest, today)
-      return unless File.respond_to?(:symlink)
       latest_day = File.dirname(today)
       latest_symlink = File.join(dest, "latest")
       File.force_symlink(latest_day, latest_symlink)
