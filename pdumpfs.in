@@ -117,9 +117,9 @@ if windows?
   require "win32ole"
 
   if RUBY_VERSION < "1.8.0"
+    CreateHardLinkA = Win32API.new("kernel32", "CreateHardLinkA", "ppl", 'i')
     def File.link(l, t)
-      proc = Win32API.new("kernel32", "CreateHardLinkA", %w(p p l), 'i')
-      result = proc.call(t, l, 0)
+      result = CreateHardLinkA.call(t, l, 0)
 
       raise Errno::EACCES  if result == 0
     end
@@ -136,15 +136,14 @@ if windows?
     end.tr('\\', File::SEPARATOR)
   end
 
+  GetVolumeInformation = Win32API.new("kernel32", "GetVolumeInformation",
+                                      "PPLPPPPL", "I")
   def get_filesystem_type (path)
     return nil unless(File.exist?(path))
 
-    get_volume_information = Win32API.new("kernel32", "GetVolumeInformation",
-                                          %w(P P L P P P P L), "I")
-
     drive = File.expand_path(path)[0..2]
     buff = "\0" * 1024
-    get_volume_information.call(drive, nil, 0, nil, nil, nil, buff, 1024)
+    GetVolumeInformation.call(drive, nil, 0, nil, nil, nil, buff, 1024)
 
     buff.sub(/\000+/, '')
   end
@@ -153,20 +152,19 @@ if windows?
     get_filesystem_type(dir) == "NTFS"
   end
 
+  GetLocaltime = Win32API.new("kernel32", "GetLocalTime", "P", 'V')
+  SystemTimeToFileTime = Win32API.new("kernel32", "SystemTimeToFileTime",
+                                      "PP", 'I')
   def get_file_time (time)
-    get_local_time = Win32API.new("kernel32", "GetLocalTime", %w(P), 'V')
-    systemtime_to_filetime = Win32API.new("kernel32", "SystemTimeToFileTime",
-                                        %w(P P), 'I')
-
     pSYSTEMTIME = ' ' * 2 * 8     # 2byte x 8
     pFILETIME = ' ' * 2 * 8       # 2byte x 8
 
-    get_local_time.call(pSYSTEMTIME)
+    GetLocaltime.call(pSYSTEMTIME)
     t1 = pSYSTEMTIME.unpack("S8")
     t1[0..1] = time.year, time.month
     t1[3..6] = time.day, time.hour, time.min, time.sec
 
-    systemtime_to_filetime.call(t1.pack("S8"), pFILETIME)
+    SystemTimeToFileTime.call(t1.pack("S8"), pFILETIME)
 
     pFILETIME
   end
@@ -179,24 +177,75 @@ if windows?
     alias_method(:utime_orig, :utime)
   end
 
+  CreateFile  = Win32API.new("kernel32", "CreateFileA",
+                             "PLLLLLL", "L")
+  SetFileTime = Win32API.new("kernel32", "SetFileTime", "LPPP", "I")
+  CloseHandle = Win32API.new("kernel32", "CloseHandle", "L", "I")
+
   def File.utime (a, m, dir)
     File.utime_orig(a, m, dir)  unless(File.directory?(dir))
-
-    create_file =  Win32API.new("kernel32", "CreateFileA",
-                                %w(P L L L L L L), "L")
-    set_file_time = Win32API.new("kernel32", "SetFileTime", %w(L P P P), "I")
-    close_handle = Win32API.new("kernel32", "CloseHandle", %w(L), "I")
 
     atime = get_file_time(a.dup.utc)
     mtime = get_file_time(m.dup.utc)
 
-    hDir = create_file.Call(dir.dup, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
+    hDir = CreateFile.Call(dir.dup, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
                             FILE_FLAG_BACKUP_SEMANTICS, 0)
-    set_file_time.call(hDir, 0, atime, mtime)
-    close_handle.Call(hDir)
+    SetFileTime.call(hDir, 0, atime, mtime)
+    CloseHandle.Call(hDir)
 
     return 0
   end
+
+  LOCALE_USER_DEFAULT    = 0x400
+  LOCALE_SABBREVLANGNAME = 3
+  LOCALE_USE_CP_ACP      = 0x40000000
+  GetLocaleInfo = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
+
+  def get_locale_name
+    locale_name = " " * 32
+    status = GetLocaleInfo.call(LOCALE_USER_DEFAULT, 
+                                LOCALE_SABBREVLANGNAME | LOCALE_USE_CP_ACP,
+                                locale_name, 32)
+    if status == 0
+      return nil
+    else
+      return locale_name.split("\x00").first
+    end
+  end
+
+  SW_HIDE                = 0
+  SW_SHOWNORMAL          = 1
+
+  ShellExecute      = Win32API.new("shell32",  "ShellExecute", "LPPPPL", 'L')
+  LoadIcon          = Win32API.new("user32",   "LoadIcon", "II", "I")
+  GetModuleFileName = Win32API.new("kernel32", "GetModuleFileName","IPI","I")
+
+  def get_exe_file_name
+    path = "\0" * 1024
+    length = GetModuleFileName.call(0 ,path, path.length)
+    return path[0, length].tr('\\', File::SEPARATOR)
+  end
+
+  def get_program_file_name
+    exe_file_name = get_exe_file_name
+    if File.basename(exe_file_name) == "ruby.exe"
+      return File.expand_path($0).gsub('\\', File::SEPARATOR)
+    else
+      return exe_file_name
+    end
+  end
+
+  def get_program_directory
+    program_file_name = get_program_file_name
+    return File.dirname(program_file_name)
+  end
+
+  def init
+    locale_name = get_locale_name
+    $KCODE = "SJIS" if locale_name == "JPN"
+  end
+
+  init
 end
 
 $vruby_libraries_loaded = false
@@ -320,53 +369,8 @@ if has_vruby?
     FontSize   = 14
     FontName   = "MS UI Gothic"
 
-    SW_HIDE                = 0
-    SW_SHOWNORMAL          = 1
-
-    ShellExecute      = Win32API.new("shell32",  "ShellExecute", "LPPPPL", 'L')
-    LoadIcon          = Win32API.new("user32",   "LoadIcon", "II", "I")
-    GetModuleFileName = Win32API.new("kernel32", "GetModuleFileName","IPI","I")
-
-    def get_exe_file_name
-      path = "\0" * 1024
-      length = GetModuleFileName.call(0 ,path, path.length)
-      return path[0, length].tr('\\', File::SEPARATOR)
-    end
-
-    def get_program_file_name
-      exe_file_name = get_exe_file_name
-      if File.basename(exe_file_name) == "ruby.exe"
-        return File.expand_path($0).gsub('\\', File::SEPARATOR)
-      else
-        return exe_file_name
-      end
-    end
-
-    def get_program_directory
-      program_file_name = get_program_file_name
-      return File.dirname(program_file_name)
-    end
-
-    LOCALE_USER_DEFAULT    = 0x400
-    LOCALE_SABBREVLANGNAME = 3
-    LOCALE_USE_CP_ACP      = 0x40000000
-    GetLocaleInfo = Win32API.new("kernel32", "GetLocaleInfo", "IIPI", "I")
-
-    def get_locale_name
-      locale_name = " " * 32
-      status = GetLocaleInfo.call(LOCALE_USER_DEFAULT, 
-                                  LOCALE_SABBREVLANGNAME | LOCALE_USE_CP_ACP,
-                                  locale_name, 32)
-      if status == 0
-        return nil
-      else
-        return locale_name.split("\x00").first
-      end
-    end
-
     def init_catalog (program_directory)
       locale_name  = get_locale_name
-      $KCODE = "SJIS" if locale_name == "JPN"
       if locale_name
         filename = File.join(program_directory,
                              sprintf("catalog.%s.txt", locale_name))

@@ -19,6 +19,7 @@
 	(Pdumpfs::Pdumpfs::recursive_copy): Ditto.
 	(Pdumpfs::Pdumpfs::sub_directory?): New method.
 	(Pdumpfs::Pdumpfs::start): Use it.
+	(File::init): New method. Initialize $KCODE in the method.
 
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.
