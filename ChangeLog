@@ -1,6 +1,9 @@
 2004-08-10  Satoru Takabayashi  <satoru@namazu.org>
 
-	* Makefile (VERSION): Bumped version number to 1.2.
+	* pdumpfs.in (Pdumpfs::Pdumpfs::report): New method.
+	(Pdumpfs::Pdumpfs::update_file): Use it.
+	(Pdumpfs::Pdumpfs::recursive_copy): Ditto.
+	(Pdumpfs::Pdumpfs::recursive_copy): Simplified using detect_type.
 
 	* pdumpfs.in (parse_options): New option: --dry-run (-n).
 	(Pdumpfs::Pdumpfs::initialize): New field: @dry_run.
@@ -13,6 +16,8 @@
 	(Pdumpfs::Pdumpfs::update_snapshot): Modify the exception
 	handling. Don't rescue exceptions other than Errno::ENOENT.
 	(Pdumpfs::Pdumpfs::recursive_copy): Ditto.
+
+	* Makefile (VERSION): Bumped version number to 1.2.
 
 	* tests/pdumpfs-test: be quiet.
 

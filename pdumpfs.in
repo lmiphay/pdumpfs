@@ -905,12 +905,12 @@ module Pdumpfs
       File.chmod(stat.mode, dest) # not necessary. just to make sure
     end
 
-    def detect_type (src, latest)
+    def detect_type (src, latest = nil)
       type = "unsupported"
       if File.real_directory?(src)
         type = "directory"
       else
-        if File.real_file?(latest)
+        if latest and File.real_file?(latest)
           case File.ftype(src)
           when "file"
             if same_file?(src, latest)
@@ -938,7 +938,7 @@ module Pdumpfs
     def chown_if_root (type, src, today)
       return unless Process.uid == 0 and type != "unsupported"
       if type == "symlink"
-        if File.respond_to? 'lchown'
+        if File.respond_to?(:lchown)
           stat = File.lstat(src)
           File.lchown(stat.uid, stat.gid, today)
         end
@@ -948,12 +948,15 @@ module Pdumpfs
       end
     end
 
-    def update_file (src, latest, today)
-      type = detect_type(src, latest)
-
-      message = sprintf("%-10s %s\n", type, src)
+    def report (type, file_name)
+      message = sprintf("%-10s %s\n", type, file_name)
       @reporter.call(message)
       @interval_proc.call
+    end
+
+    def update_file (src, latest, today)
+      type = detect_type(src, latest)
+      report(type, src)
       return if @dry_run
 
       case type
@@ -970,7 +973,7 @@ module Pdumpfs
       when "unsupported"
         # just ignore it
       else
-        raise "shouldn't be reached here"
+        raise "#{type}: shouldn't be reached here"
       end
       chown_if_root(type, src, today)
     end
@@ -996,15 +999,13 @@ module Pdumpfs
 
         begin
           update_file(s, l, t)
+          dirs[t] = File.stat(s) if File.ftype(s) == "directory"
         rescue Errno::ENOENT => e
           wprintf("%s: %s", src, e.message)
           next
         end
-
-        if File.ftype(s) == "directory"
-          dirs[t] = File.stat(s)
-        end
       end
+
       return if @dry_run
       restore_dir_attributes(dirs)
     end
@@ -1017,45 +1018,34 @@ module Pdumpfs
         if @matcher.exclude?(s)
           if File.lstat(s).directory? then Find.prune() else next end
         end
-
         r = s.sub(%r[^#{Regexp.quote(src)}/?], "")
         t = File.join(dest, r)
 
-        @reporter.call(s)
-        @interval_proc.call
+        type = detect_type(s)
+        report(type, s)
         next if @dry_run
 
         begin
-          case File.ftype(s)
+          case type
           when "directory"
             File.mkpath(t)
-          when "file"
+          when "new file"
             copy(s, t)
-          when "link"
+          when "symlink"
             File.force_symlink(File.readlink(s), t)
+          when "unsupported"
+            # just ignore it
           else
-            next # skip other kind of files
+            raise "#{type}: shouldn't be reached here"
           end
-          if Process.uid == 0
-            if File.ftype(s) == "link"
-              if File.respond_to? 'lchown'
-                stat = File.lstat(s)
-                File.lchown(stat.uid, stat.gid, t)
-              end
-            else
-              stat = File.stat(s)
-              File.chown(stat.uid, stat.gid, t)
-            end
-          end
+          chown_if_root(type, s, t)
+          dirs[t] = File.stat(s) if File.ftype(s) == "directory"
         rescue Errno::ENOENT => e
           wprintf("%s: %s", s, e.message)
           next
         end
-
-        if File.ftype(s) == "directory"
-          dirs[t] = File.stat(s)
-        end
       end
+
       return if @dry_run
       restore_dir_attributes(dirs)
     end
@@ -1163,6 +1153,7 @@ def main
       pdumpfs.start(src, dest, base)
     rescue => e
       wprintf("%s", e.message)
+      wprintf("%s", e.backtrace.join("\n"))
       exit(1)
     end
   end
