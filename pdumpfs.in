@@ -831,10 +831,9 @@ module Pdumpfs
       else
         recursive_copy(src, today)
       end
-      return if @dry_run
 
       elapsed = Time.now - start_time
-      add_log_entry(src, today, elapsed) 
+      add_log_entry(src, today, elapsed) unless @dry_run
     end
 
     def convert_bytes (bytes)
