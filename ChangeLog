@@ -259,7 +259,8 @@
  	* pdumpfs: Version 0.6 released.
 
 	* pdumpfs (recursive_copy): Allow disappearing files while
-	recursive_copy runs. Suggested by Roger Klorese <rogerk at vmware.com>.
+	recursive_copy runs by cathing Errno::ENOENT. Suggested by Roger
+	Klorese <rogerk at vmware.com>.
 	(update_snapshot): Ditto.
 
 2002-02-16  Satoru Takabayashi  <satoru@namazu.org>
