@@ -850,8 +850,8 @@ module Pdumpfs
     def sub_directory? (src, dest)
       src  = File.expand_path(src)
       dest = File.expand_path(dest)
-      return (src == dest or
-              /^#{Regexp.quote(src)}#{File::SEPARATOR}/.match(dest))
+      src  += File::SEPARATOR unless /#{File::SEPARATOR}$/.match(src)
+      return (src == dest or /^#{Regexp.quote(src)}/.match(dest))
     end
 
     def start (src, dest, base = nil)
