@@ -11,7 +11,7 @@
 <p class="lang-navigator">English | <a href="pdumpfs-ja.html">Japanese</a></p>
 
 <h1>pdumpfs: a daily backup system similar to Plan9's dumpfs</h1>
-<p class="last-modified">Last Modified: 2004-07-13 (Since: 2001-02-18)</p>
+<p class="last-modified">Last Modified: 2004-08-11 (Since: 2001-02-18)</p>
 
 <hr />
 
@@ -28,38 +28,33 @@ pdumpfs constructs the snapshot YYYY/MM/DD in the destination directory. All sou
 <h2><a name="news" id="news">What's New</a></h2>
 
 <ul>
+<li><em>2004-08-11</em>: <a href="#download">pdumpfs 1.2</a> Released!<br />
+<ul>
+<li>New options --quiet (-q), --dry-run (-n) are now added</li>
+<li>Abolish the 31 days limit of finding the last backup
+for incremental backup</li>
+<li>Create a `latest' symbolic link referring to the latest backup</li>
+<li>Other small modifications has been made</li>
+</ul></li>
+
 <li><em>2004-07-13</em>: <a href="#download">pdumpfs 1.1</a> Released!<br />
 <ul>
-<li>A bug in error message handling was fixed.</li>
-<li>Some small modifications were also made.</li>
+<li>A bug in error message handling has been fixed</li>
+<li>Other small modifications has been made</li>
 </ul></li>
 
 <li><em>2004-06-22</em>: <a href="#download">pdumpfs 1.0</a> Released!<br />
 <ul>
 <li><a href="#gui">A Windows GUI</a> is now supported using
-<a href="http://www.osk.3web.ne.jp/~nyasu/software/vrproject.html">VisualuRuby</a>.</li>
+<a href="http://www.osk.3web.ne.jp/~nyasu/software/vrproject.html">VisualuRuby</a></li>
 </ul></li>
 
 <li><em>2004-05-11</em>: <a href="#download">pdumpfs 0.9</a> Released!<br />
 <ul>
-<li>Some bugs were fixed including "unexpected next" bug.</li>
+<li>Some bugs has been fixed including "unexpected next" bug</li>
 <li>A Windows binary is now available experimentally using
-<a href="http://exerb.sourceforge.jp/">Exerb</a>.</li>
+<a href="http://exerb.sourceforge.jp/">Exerb</a></li>
 </ul></li>
-
-<li><em>2004-03-31</em>: <a href="#download">pdumpfs 0.8</a> Released!<br />
-Ruby 1.6 is now supported again (pdumpfs 0.7 doesn't work with ruby 1.6)</li>
-
-<li><em>2004-03-30</em>: <a href="#download">pdumpfs 0.7</a> Released!<br />
-<ul>
-<li>Win32/NTFS file system is now supported.</li>
-<li>--exclude option is now supported.</li>
-<li>Thanks to <a href="http://www.monochrome.jp/~katsuwo/">Takeshi Komiya</a>
-for the patches.
-</li>
-<li>Some small bugs were also fixed.</li>
-</ul>
-</li>
 
 <li><em>2001-02-19</em>: <a href="#download">pdumpfs 0.1</a> Released!<br /></li>
 </ul>
@@ -118,12 +113,20 @@ you can use the following options.
 <dl>
 <dt>--exclude=PATTERN</dt>
 <dd>Exclude files or directories matching PATTERN (Regular Expressions in
-Ruby) from a backup. You can specify the option as many you like.</dd>
+Ruby) from a backup. You can specify the option as many you like.
+The pattern matching is performed for the path given by
+the command line arguments. 
+If the `source directory' given by the command line is a
+relative path, pattern matching is performed for relative
+paths including the given path itself. If the `source
+directory' is an absolute path, pattern matching is
+performed for absolute paths.
+</dd>
 <dt>--exclude-by-size=SIZE</dt>
 <dd>Exclude files larger than SIZE from a backup. You can
 specify SIZE like 100, 100K, 10M, and 1G. </dd>
 <dt>--exclude-by-glob=GLOB</dt>
-<dd>Exclude files matching FILE from a backup. fnmatch(3)
+<dd>Exclude files matching GLOB from a backup. fnmatch(3)
 (shell globbing) to the basename of a file  is used  for matching.
 You can specify the option as many you like. </dd>
 </dl>
@@ -145,25 +148,21 @@ You can specify the option as many you like. </dd>
 <h2>Limitation</h2>
 
 <ul>
-<li>pdumpfs can handle only normal files, directories, and symbolic links.</li>
+<li>pdumpfs can handle only normal files, directories, and symbolic links</li>
 
-<li>pdumpfs may not work on systems other than UNIX because pdumpfs utilizes hard links.</li>
+<li>pdumpfs is not suited for a directory containing large files which update frequently</li>
 
-<li>pdumpfs is not suited for a directory containing large files which update frequently.</li>
-
-<li>If more than 31 days absence occurs, incremental backup would not be performed. So, backup your files everyday.</li>
-
-<li>With pdumpfs, you can easily remove unnecessary files because the past files can be retrieved at any time. However, please do not put too much confidence in pdumpfs. pdumpfs may have serious bugs.</li>
+<li>With pdumpfs, you can easily remove unnecessary files because the past files can be retrieved at any time. However, please do not put too much confidence in pdumpfs. pdumpfs may have serious bugs</li>
 </ul>
 
 <h2>Tips</h2>
 
 <ul>
-<li>If files are increased by 10 MB everyday, about 4 GB disk space is consumed by one year. It is not too much, considering the recent evolution of computer resources.</li>
+<li>If files are increased by 10 MB everyday, about 4 GB disk space is consumed by one year. It is not too much, considering the recent evolution of computer resources</li>
 
-<li>Backup your files to a physically separated device.</li>
+<li>Backup your files to a physically separated device</li>
 
-<li>With a linux ext2/ext3 filesystem, files can be immutable with chattr command. To make all files in /backup immutable, run <code>chattr -R +i /backup</code> with the root privilege. chattr command keep you from doing rm -rf backup files by accident.</li>
+<li>With a linux ext2/ext3 filesystem, files can be immutable with chattr command. To make all files in /backup immutable, run <code>chattr -R +i /backup</code> with the root privilege. chattr command keep you from doing rm -rf backup files by accident</li>
 </ul>
 
 <h2><a name="download" id="download">Download</a></h2>
@@ -172,8 +171,8 @@ pdumpfs is a free software with ABSOLUTELY NO WARRANTY under the terms of the <a
 </p>
 
 <ul>
-<li><a href="pdumpfs-1.1.tar.gz">pdumpfs-1.1.tar.gz</a></li>
-<li><a href="pdumpfs-w32-1.1.zip">pdumpfs-w32-1.1.zip</a> (Windows binary)</li>
+<li><a href="pdumpfs-1.2.tar.gz">pdumpfs-1.2.tar.gz</a></li>
+<li><a href="pdumpfs-w32-1.2.zip">pdumpfs-w32-1.2.zip</a> (Windows binary)</li>
 <li><a href="http://sourceforge.net/cvs/?group_id=111004">CVS</a></li>
 </ul>
 
