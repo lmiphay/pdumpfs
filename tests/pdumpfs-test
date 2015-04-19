@@ -17,6 +17,7 @@ yesterday=`date --date '1 day ago' +%Y/%m/%d`
 
 ../pdumpfs src dest > tmp.log || exit 1
 diff -r src dest/$today/src || exit 1
+mkdir -p dest/$yesterday && rmdir dest/$yesterday
 mv dest/$today dest/$yesterday
 
 echo update > src/foo
